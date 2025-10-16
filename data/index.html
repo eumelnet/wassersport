@@ -1,5 +1,164 @@
-<html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Canal Watersports — Fresh, Fun & Green</title>
+  <meta name="description" content="Explore motorboats, paddleboats, rowing, and stand-up paddleboarding on the canal. Fresh, fun, and green." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "gsap": "https://cdn.skypack.dev/gsap@3.12.5"
+    }
+  }
+  </script>
+</head>
 <body>
-hello
+  <header class="site-header">
+    <a class="brand" href="#">
+      <img class="brand-mark" src="logo.png" alt="Canal Watersports logo" />
+      <span class="brand-name">Canal Watersports</span>
+    </a>
+    <nav class="nav">
+      <a href="#activities">Activities</a>
+      <a href="#about">About</a>
+      <a class="btn book-link" href="#book">Book</a>
+    </nav>
+  </header>
+
+  <section id="captain-banner" class="banner" aria-live="polite">
+    <div class="banner-inner">
+      <strong>Captain announcements:</strong>
+      <span id="captain-text">Loading…</span>
+    </div>
+  </section>
+
+  <main>
+    <section class="hero">
+      <div class="hero-media">
+        <img src="canal_photo.png" alt="Green canal with boats and paddlers" />
+        <div class="ripples" aria-hidden="true"></div>
+      </div>
+      <div class="hero-copy">
+        <h1>Fresh, fun, and <span class="accent">green</span> on the canal.</h1>
+        <p>Choose your pace: motorboats, paddleboats, rowing, or SUP. Clean water, friendly vibes, and easy booking.</p>
+        <div class="hero-cta">
+          <a class="btn primary" href="#book">Book a session</a>
+          <a class="btn ghost" href="#activities">Explore activities</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="activities" class="activities">
+      <header class="section-header">
+        <h2>Pick your ride</h2>
+        <p>All equipment provided. Safety briefings included.</p>
+      </header>
+      <div class="grid">
+        <article class="card">
+          <img src="motorboat.png" alt="Motorboat icon" />
+          <h3>Motorboats</h3>
+          <p>Zip along gentle stretches with electric motors. Quiet, clean, and effortless.</p>
+          <div class="meta">
+            <span>Up to 5 people</span>
+            <span>From 30 min</span>
+          </div>
+          <a class="btn tiny" href="#book">Book motorboat</a>
+        </article>
+
+        <article class="card">
+          <img src="paddleboat.png" alt="Paddleboat icon" />
+          <h3>Paddleboats</h3>
+          <p>Relaxed pedaling for couples, friends, and families. Stable and super fun.</p>
+          <div class="meta">
+            <span>2–4 people</span>
+            <span>From 30 min</span>
+          </div>
+          <a class="btn tiny" href="#book">Book paddleboat</a>
+        </article>
+
+        <article class="card">
+          <img src="rowing.png" alt="Rowing icon" />
+          <h3>Rowing</h3>
+          <p>Classic canal rhythm. Technique coaching available for beginners.</p>
+          <div class="meta">
+            <span>1–2 people</span>
+            <span>From 45 min</span>
+          </div>
+          <a class="btn tiny" href="#book">Book rowing</a>
+        </article>
+
+        <article class="card">
+          <img src="sup.png" alt="Stand-up paddleboarding icon" />
+          <h3>Stand-up Paddle</h3>
+          <p>Stand tall and glide. Great core workout with serene views.</p>
+          <div class="meta">
+            <span>Solo</span>
+            <span>From 45 min</span>
+          </div>
+          <a class="btn tiny" href="#book">Book SUP</a>
+        </article>
+      </div>
+    </section>
+
+    <section id="about" class="about">
+      <div class="about-content">
+        <h2>Why the canal?</h2>
+        <ul class="features">
+          <li>Electric fleet for low noise and zero local emissions</li>
+          <li>Clean water and wildlife-friendly practices</li>
+          <li>Beginner-friendly routes and guides</li>
+          <li>Community events every weekend</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="book" class="booking">
+      <header class="section-header">
+        <h2>Book your session</h2>
+        <p>Quick, simple, and secure.</p>
+      </header>
+      <form class="book-form" autocomplete="on">
+        <label>
+          Activity
+          <select required>
+            <option value="">Select an activity</option>
+            <option>Motorboats</option>
+            <option>Paddleboats</option>
+            <option>Rowing</option>
+            <option>Stand-up Paddle</option>
+          </select>
+        </label>
+        <label>
+          Date
+          <input type="date" required />
+        </label>
+        <label>
+          Time
+          <input type="time" required />
+        </label>
+        <label>
+          Guests
+          <input type="number" min="1" max="10" value="2" required />
+        </label>
+        <button class="btn primary" type="submit">Check availability</button>
+        <p class="form-note">Need help? <a href="#" class="link">Contact us</a></p>
+      </form>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div>© <span id="year"></span> Canal Watersports</div>
+    <nav class="foot-nav">
+      <a href="#about">About</a>
+      <a href="#activities">Activities</a>
+      <a href="#book">Book</a>
+    </nav>
+  </footer>
+
+  <script type="module" src="app.js"></script>
 </body>
 </html>
