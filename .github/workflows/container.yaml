@@ -1,0 +1,41 @@
+name: Webapp
+
+on:
+  push:
+#    tags:
+#    - "*"
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Container Build / Push
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          export DOCKER_BUILDKIT=1
+          docker build -f Dockerfile -t ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:${VERSION} .
+          docker push ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:${VERSION}
+      - name: Helm install
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          echo "$KUBECONFIG_FILE" | base64 --decode > /tmp/config
+          export KUBECONFIG=/tmp/config
+          helm -n "${GITHUB_REPOSITORY##*/}" upgrade -i webapp \
+            --set image.repository=ghcr.io/eumelnet/eumelnet/"${GITHUB_REPOSITORY##*/}" \
+            --set image.tag=main \
+            --set ingress.enabled=true \
+            --set ingress.className=nginx \
+            --set ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
+            --set ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
+            --set ingress.hosts[0].host="${GITHUB_REPOSITORY##*/}".otc.mcsps.de \
+            --set ingress.hosts[0].paths[0].path=/ \
+            --set ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
+            --set ingress.tls[0].hosts[0]="${GITHUB_REPOSITORY##*/}".otc.mcsps.de \
+            --set ingress.tls[0].secretName="${GITHUB_REPOSITORY##*/}"-otc-mcsps-de-tls-secret \
+            oci://ghcr.io/eumelnet/webapp:0.1.0 \
+            --create-namespace
+        env:
+          KUBECONFIG_FILE: '${{ secrets.KUBE_CONFIG }}'
