@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Anmelden — Havelkanal Wassersport</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">
+      <img class="brand-mark" src="logo.png" alt="Canal Watersports logo" />
+      <span class="brand-name">Havelkanal Wassersport</span>
+    </a>
+    <nav class="nav">
+      <a href="/#activities">Aktivitäten</a>
+      <a href="/#about">Über uns</a>
+      <a class="btn book-link" href="/#book">Nimm teil</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="auth-section">
+      <div class="auth-box">
+        <h1>Mitgliederbereich</h1>
+        <p class="auth-subtitle">Bitte melde Dich an, um fortzufahren.</p>
+
+        <form class="auth-form" id="login-form" autocomplete="on" novalidate>
+          <label>
+            Benutzername
+            <input type="text" name="username" id="username" autocomplete="username" required />
+          </label>
+          <label>
+            Passwort
+            <input type="password" name="password" id="password" autocomplete="current-password" required />
+          </label>
+          <p class="auth-error" id="login-error" aria-live="polite"></p>
+          <button class="btn primary" type="submit" id="login-btn">Anmelden</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div>© <span id="year"></span> Havelkanal Wassersport</div>
+    <nav class="foot-nav">
+      <a href="/#about">Über uns</a>
+      <a href="/#activities">Aktivitäten</a>
+      <a href="/#book">Teilnehmen</a>
+    </nav>
+  </footer>
+
+  <script src="login.js"></script>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

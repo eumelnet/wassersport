@@ -1,4 +1,12 @@
-FROM ghcr.io/mcsps/nginx-non-root:latest
+FROM node:20-alpine
 
-COPY data /usr/share/nginx/html
+WORKDIR /app
 
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]

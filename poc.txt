@@ -1,0 +1,5 @@
+ cp .env.example .env           # edit secrets if needed
+  docker compose up --build -d
+  docker compose exec app node db/seed.js   # creates demo user
+  # then visit http://localhost:3000
+  # login: demo / demo1234
