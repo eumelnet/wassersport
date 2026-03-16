@@ -1,0 +1,14 @@
+# Non-sensitive application configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "wassersport.fullname" . }}-app
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "wassersport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: app
+data:
+  DB_HOST: {{ include "wassersport.fullname" . }}-db
+  DB_NAME: {{ .Values.db.database | quote }}
+  DB_USER: {{ .Values.db.username | quote }}
+  PORT:    {{ .Values.app.port | quote }}

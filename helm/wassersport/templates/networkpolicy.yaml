@@ -1,0 +1,86 @@
+# ── App pods ──────────────────────────────────────────────────────────────────
+# Ingress: only from ingress-nginx controller pods
+# Egress:  only to DB pods (MySQL) + kube-dns
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "wassersport.fullname" . }}-app
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "wassersport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: app
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "wassersport.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: app
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Allow traffic only from the ingress-nginx controller namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: {{ .Values.app.port }}
+
+  egress:
+    # Allow DNS resolution (UDP + TCP for large responses)
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+    # Allow MySQL connections to DB pods only
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "wassersport.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: db
+      ports:
+        - protocol: TCP
+          port: {{ .Values.db.port }}
+
+---
+# ── DB pods ───────────────────────────────────────────────────────────────────
+# Ingress: only from app pods
+# Egress:  DNS only (no outbound internet)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "wassersport.fullname" . }}-db
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "wassersport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: db
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "wassersport.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: db
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Allow MySQL connections from app pods and seed job only
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "wassersport.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.db.port }}
+
+  egress:
+    # DNS only
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

@@ -1,0 +1,13 @@
+apiVersion: v2
+name: wassersport
+description: Havelkanal Wassersport — Express.js web app with member login and MySQL backend
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - wassersport
+  - havelkanal
+  - nodejs
+  - express
+maintainers:
+  - name: eumelnet

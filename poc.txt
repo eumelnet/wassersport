@@ -3,3 +3,11 @@
   docker compose exec app node db/seed.js   # creates demo user
   # then visit http://localhost:3000
   # login: demo / demo1234
+
+
+  helm upgrade --install wassersport helm/wassersport/ \
+    --namespace wassersport --create-namespace \
+    --set ingress.host=wassersport.example.com \
+    --set secrets.dbPassword=<strong-password> \
+    --set secrets.dbRootPassword=<strong-root-password> \
+    --set secrets.jwtSecret=<32-char-random-secret>

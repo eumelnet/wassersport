@@ -1,0 +1,30 @@
+Wassersport has been deployed!
+
+{{- if .Values.ingress.enabled }}
+
+Application URL:
+  https://{{ .Values.ingress.host }}
+
+{{- else }}
+
+To access the application, run:
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "wassersport.fullname" . }}-app {{ .Values.app.port }}:{{ .Values.app.port }}
+  Then open: http://localhost:{{ .Values.app.port }}
+
+{{- end }}
+
+{{- if .Values.seedJob.enabled }}
+
+A seed Job (demo user: demo / demo1234) was submitted.
+Monitor it with:
+  kubectl get jobs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=seed-job
+
+{{- end }}
+
+SECURITY REMINDERS:
+  • Change secrets.dbPassword, secrets.dbRootPassword, and secrets.jwtSecret
+    before deploying to production. Use an external secret manager
+    (Sealed Secrets, External Secrets Operator, HashiCorp Vault).
+  • The demo user (demo/demo1234) is for PoC only. Remove it in production.
+  • Verify that the Network Policies match your cluster's ingress-controller
+    namespace label (default: kubernetes.io/metadata.name=ingress-nginx).

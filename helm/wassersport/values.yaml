@@ -1,0 +1,73 @@
+nameOverride: ""
+fullnameOverride: ""
+
+# ── Application ───────────────────────────────────────────────────────────────
+app:
+  image:
+    repository: ghcr.io/eumelnet/wassersport
+    tag: ""           # defaults to .Chart.AppVersion
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  port: 3000
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+# ── Database (MySQL 8) ────────────────────────────────────────────────────────
+db:
+  image:
+    repository: mysql
+    tag: "8.0"
+    pullPolicy: IfNotPresent
+  port: 3306
+  database: wassersport
+  username: wassersport
+  storage:
+    size: 5Gi
+    className: ""     # leave empty to use cluster default StorageClass
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
+# ── Secrets ───────────────────────────────────────────────────────────────────
+# IMPORTANT: In production use an external secret manager (Vault, ESO, Sealed Secrets).
+# Never commit real values to source control.
+secrets:
+  dbPassword: "change-me"
+  dbRootPassword: "change-me-root"
+  jwtSecret: "change-me-in-production-use-32-chars-minimum"
+
+# ── Seed job (creates demo user demo/demo1234) ────────────────────────────────
+seedJob:
+  enabled: true
+
+# ── Ingress ───────────────────────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: "nginx"
+  host: "wassersport.example.com"
+  tls: true
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+# ── HPA ───────────────────────────────────────────────────────────────────────
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+# ── Pod Disruption Budget ─────────────────────────────────────────────────────
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1

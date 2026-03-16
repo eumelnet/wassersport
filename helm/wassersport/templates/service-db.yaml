@@ -1,0 +1,20 @@
+# Headless service for the StatefulSet — DNS: <release>-wassersport-db-0.<svc>
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "wassersport.fullname" . }}-db
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "wassersport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: db
+spec:
+  type: ClusterIP
+  clusterIP: None     # headless — used by StatefulSet
+  selector:
+    {{- include "wassersport.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: db
+  ports:
+    - name: mysql
+      port: {{ .Values.db.port }}
+      targetPort: mysql
+      protocol: TCP

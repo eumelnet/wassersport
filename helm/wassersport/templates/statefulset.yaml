@@ -1,0 +1,128 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "wassersport.fullname" . }}-db
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "wassersport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: db
+spec:
+  serviceName: {{ include "wassersport.fullname" . }}-db
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "wassersport.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: db
+  template:
+    metadata:
+      labels:
+        {{- include "wassersport.labels" . | nindent 8 }}
+        app.kubernetes.io/component: db
+    spec:
+      serviceAccountName: {{ include "wassersport.serviceAccountName.db" . }}
+      automountServiceAccountToken: false
+
+      # ── Pod-level security ───────────────────────────────────────────────────
+      # Note: The official mysql:8 image initialises as root then drops to uid 999.
+      # runAsNonRoot cannot be set at pod level; it is enforced per-container below
+      # once initialisation is complete.  For a fully non-root DB consider
+      # bitnami/mysql or mariadb images as a drop-in replacement.
+      securityContext:
+        fsGroup: 999      # mysql group owns mounted volumes
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: db
+          image: "{{ .Values.db.image.repository }}:{{ .Values.db.image.tag }}"
+          imagePullPolicy: {{ .Values.db.image.pullPolicy }}
+
+          # ── Container-level security ─────────────────────────────────────────
+          securityContext:
+            allowPrivilegeEscalation: false
+            # readOnlyRootFilesystem is intentionally NOT set for MySQL:
+            # the entrypoint script writes to /etc and /run during init.
+            # All other restrictions are in place.
+            capabilities:
+              drop: ["ALL"]
+
+          ports:
+            - name: mysql
+              containerPort: {{ .Values.db.port }}
+              protocol: TCP
+
+          env:
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "wassersport.fullname" . }}-app
+                  key: DB_NAME
+            - name: MYSQL_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "wassersport.fullname" . }}-app
+                  key: DB_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wassersport.fullname" . }}
+                  key: db-password
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wassersport.fullname" . }}
+                  key: db-root-password
+
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            - name: run
+              mountPath: /run/mysqld
+
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "127.0.0.1",
+                        "-u", "$(MYSQL_USER)", "-p$(MYSQL_PASSWORD)"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 6
+
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "127.0.0.1"]
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 3
+
+          resources:
+            {{- toYaml .Values.db.resources | nindent 12 }}
+
+      volumes:
+        - name: init-sql
+          configMap:
+            name: {{ include "wassersport.fullname" . }}-db-init
+        - name: tmp
+          emptyDir: {}
+        - name: run
+          emptyDir: {}
+
+  # ── Persistent storage via VolumeClaimTemplate ────────────────────────────
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "wassersport.labels" . | nindent 10 }}
+          app.kubernetes.io/component: db
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- if .Values.db.storage.className }}
+        storageClassName: {{ .Values.db.storage.className | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.db.storage.size }}

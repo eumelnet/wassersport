@@ -1,0 +1,86 @@
+{{- if .Values.seedJob.enabled }}
+# Runs `node db/seed.js` once after install/upgrade to create the demo user.
+# Remove or set seedJob.enabled=false for production.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "wassersport.fullname" . }}-seed-{{ .Release.Revision }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "wassersport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: seed-job
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        {{- include "wassersport.labels" . | nindent 8 }}
+        app.kubernetes.io/component: seed-job
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "wassersport.serviceAccountName.app" . }}
+      automountServiceAccountToken: false
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser:    1000
+        runAsGroup:   1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: seed
+          image: {{ include "wassersport.appImage" . | quote }}
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem:   true
+            capabilities:
+              drop: ["ALL"]
+
+          command: ["node", "db/seed.js"]
+
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "wassersport.fullname" . }}-app
+                  key: DB_HOST
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "wassersport.fullname" . }}-app
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "wassersport.fullname" . }}-app
+                  key: DB_USER
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wassersport.fullname" . }}
+                  key: db-password
+
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}
