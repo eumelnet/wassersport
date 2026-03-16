@@ -5,8 +5,8 @@ fullnameOverride: ""
 app:
   image:
     repository: ghcr.io/eumelnet/wassersport
-    tag: ""           # defaults to .Chart.AppVersion
-    pullPolicy: IfNotPresent
+    tag: "login"           # defaults to .Chart.AppVersion
+    pullPolicy: Always
   replicaCount: 2
   port: 3000
   resources:
