@@ -65,6 +65,36 @@ spec:
                 secretKeyRef:
                   name: {{ include "wassersport.fullname" . }}
                   key: jwt-secret
+            - name: APP_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "wassersport.fullname" . }}-app
+                  key: APP_BASE_URL
+            - name: SMTP_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "wassersport.fullname" . }}-app
+                  key: SMTP_HOST
+            - name: SMTP_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "wassersport.fullname" . }}-app
+                  key: SMTP_PORT
+            - name: SMTP_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "wassersport.fullname" . }}-app
+                  key: SMTP_USER
+            - name: SMTP_FROM
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "wassersport.fullname" . }}-app
+                  key: SMTP_FROM
+            - name: SMTP_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wassersport.fullname" . }}
+                  key: smtp-pass
           volumeMounts:
             - name: tmp
               mountPath: /tmp

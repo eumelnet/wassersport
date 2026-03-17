@@ -1,6 +1,6 @@
 # ── App pods ──────────────────────────────────────────────────────────────────
 # Ingress: only from ingress-nginx controller pods
-# Egress:  only to DB pods (MySQL) + kube-dns
+# Egress:  DB pods (MySQL) + kube-dns + SMTP (password-reset e-mails)
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -45,6 +45,11 @@ spec:
       ports:
         - protocol: TCP
           port: {{ .Values.db.port }}
+
+    # Allow outbound SMTP for password-reset e-mails
+    - ports:
+        - protocol: TCP
+          port: {{ .Values.smtp.port | int }}
 
 ---
 # ── DB pods ───────────────────────────────────────────────────────────────────

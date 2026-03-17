@@ -29,15 +29,16 @@ app.use(helmet({
 app.use(cookieParser());
 app.use(express.json());
 
-// Rate-limit login endpoint
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+// Rate-limit login and forgot-password endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
   max: 15,
   message: { ok: false, error: 'Zu viele Versuche. Bitte später erneut versuchen.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use('/api/login', loginLimiter);
+app.use('/api/login',           authLimiter);
+app.use('/api/forgot-password', authLimiter);
 
 // API routes
 app.use('/api', authRouter);

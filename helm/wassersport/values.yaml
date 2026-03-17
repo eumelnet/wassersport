@@ -76,6 +76,18 @@ secrets:
   dbPassword: "change-me"
   dbRootPassword: "change-me-root"
   jwtSecret: "change-me-in-production-use-32-chars-minimum"
+  smtpPass: "change-me-smtp-password"
+
+# ── SMTP (password-reset e-mails) ─────────────────────────────────────────────
+smtp:
+  host: "smtp.example.com"
+  port: "587"
+  user: "noreply@example.com"
+  from: "Havelkanal Wassersport <noreply@example.com>"
+  # password goes in secrets.smtpPass above
+
+# ── Application base URL (used in reset-link e-mails) ─────────────────────────
+appBaseUrl: "https://wassersport.example.com"
 
 # ── Seed job (creates demo user demo/demo1234) ────────────────────────────────
 seedJob:

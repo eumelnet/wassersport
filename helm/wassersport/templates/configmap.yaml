@@ -8,7 +8,12 @@ metadata:
     {{- include "wassersport.labels" . | nindent 4 }}
     app.kubernetes.io/component: app
 data:
-  DB_HOST: {{ include "wassersport.fullname" . }}-db
-  DB_NAME: {{ .Values.db.database | quote }}
-  DB_USER: {{ .Values.db.username | quote }}
-  PORT:    {{ .Values.app.port | quote }}
+  DB_HOST:      {{ include "wassersport.fullname" . }}-db
+  DB_NAME:      {{ .Values.db.database | quote }}
+  DB_USER:      {{ .Values.db.username | quote }}
+  PORT:         {{ .Values.app.port | quote }}
+  APP_BASE_URL: {{ .Values.appBaseUrl | quote }}
+  SMTP_HOST:    {{ .Values.smtp.host | quote }}
+  SMTP_PORT:    {{ .Values.smtp.port | quote }}
+  SMTP_USER:    {{ .Values.smtp.user | quote }}
+  SMTP_FROM:    {{ .Values.smtp.from | quote }}
