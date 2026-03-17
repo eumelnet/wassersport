@@ -4,7 +4,7 @@ fullnameOverride: ""
 # ── Application ───────────────────────────────────────────────────────────────
 app:
   image:
-    repository: ghcr.io/eumelnet/wassersport
+    repository: ghcr.io/eumelnet/eumelnet/wassersport
     tag: "login"           # defaults to .Chart.AppVersion
     pullPolicy: Always
   replicaCount: 2
@@ -39,8 +39,8 @@ db:
   database: wassersport
   username: wassersport
   storage:
-    size: 5Gi
-    className: ""     # leave empty to use cluster default StorageClass
+    size: 1Gi
+    className: "local-path"     # leave empty to use cluster default StorageClass
   resources:
     requests:
       cpu: 100m
@@ -90,7 +90,7 @@ ingress:
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    cert-manager.io/cluster-issuer: "letsencrypt"
 
 # ── HPA ───────────────────────────────────────────────────────────────────────
 autoscaling:
