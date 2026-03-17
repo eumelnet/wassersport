@@ -22,34 +22,18 @@ spec:
     spec:
       serviceAccountName: {{ include "wassersport.serviceAccountName.app" . }}
       automountServiceAccountToken: false
-
-      # ── Pod-level security (Pod Security Standards: restricted) ──────────────
       securityContext:
-        runAsNonRoot: true
-        runAsUser:    1000
-        runAsGroup:   1000
-        fsGroup:      1000
-        seccompProfile:
-          type: RuntimeDefault
-
+        {{- toYaml .Values.app.podSecurityContext | nindent 8 }}
       containers:
         - name: app
           image: {{ include "wassersport.appImage" . | quote }}
           imagePullPolicy: {{ .Values.app.image.pullPolicy }}
-
-          # ── Container-level security ────────────────────────────────────────
           securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem:   true
-            capabilities:
-              drop: ["ALL"]
-
+            {{- toYaml .Values.app.securityContext | nindent 12 }}
           ports:
             - name: http
               containerPort: {{ .Values.app.port }}
               protocol: TCP
-
-          # ── Environment — non-sensitive from ConfigMap, secrets from Secret ─
           env:
             - name: PORT
               valueFrom:
@@ -81,13 +65,9 @@ spec:
                 secretKeyRef:
                   name: {{ include "wassersport.fullname" . }}
                   key: jwt-secret
-
-          # ── Volumes — /tmp must be writable for Node.js ─────────────────────
           volumeMounts:
             - name: tmp
               mountPath: /tmp
-
-          # ── Probes ──────────────────────────────────────────────────────────
           readinessProbe:
             httpGet:
               path: /
@@ -95,7 +75,6 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
             failureThreshold: 3
-
           livenessProbe:
             httpGet:
               path: /
@@ -103,7 +82,6 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 30
             failureThreshold: 3
-
           startupProbe:
             httpGet:
               path: /
@@ -111,14 +89,11 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
             failureThreshold: 12   # 60 s total for DB connection on startup
-
           resources:
             {{- toYaml .Values.app.resources | nindent 12 }}
-
       volumes:
         - name: tmp
           emptyDir: {}
-
       # Spread pods across nodes for HA
       topologySpreadConstraints:
         - maxSkew: 1

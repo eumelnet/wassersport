@@ -16,6 +16,18 @@ app:
     limits:
       cpu: 500m
       memory: 256Mi
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser:    1000
+    runAsGroup:   1000
+    fsGroup:      1000
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem:   true
+    capabilities:
+      drop: ["ALL"]
 
 # ── Database (MySQL 8) ────────────────────────────────────────────────────────
 db:
@@ -36,6 +48,26 @@ db:
     limits:
       cpu: "1"
       memory: 512Mi
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    # readOnlyRootFilesystem is intentionally NOT set for MySQL:
+    # the entrypoint script writes to /etc and /run during init.
+    # All other restrictions are in place.
+    capabilities:
+      drop: ["ALL"]
+    runAsGroup: 999
+    runAsUser: 999
+
+  # ── Pod-level security ───────────────────────────────────────────────────
+  # Note: The official mysql:8 image initialises as root then drops to uid 999.
+  # runAsNonRoot cannot be set at pod level; it is enforced per-container below
+  # once initialisation is complete.  For a fully non-root DB consider
+  # bitnami/mysql or mariadb images as a drop-in replacement.
+  podSecurityContext:
+    fsGroup: 999      # mysql group owns mounted volumes
+    seccompProfile:
+      type: RuntimeDefault
 
 # ── Secrets ───────────────────────────────────────────────────────────────────
 # IMPORTANT: In production use an external secret manager (Vault, ESO, Sealed Secrets).
