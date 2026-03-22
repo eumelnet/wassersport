@@ -46,6 +46,9 @@ app.use(helmet({
 app.use(cookieParser());
 app.use(express.json());
 
+// ──  Operate behind reverse proxy (nginx) ─────────────────────────────────────────────────────────────
+app.set('trust proxy', true);
+
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
