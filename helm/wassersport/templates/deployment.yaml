@@ -95,6 +95,11 @@ spec:
                 secretKeyRef:
                   name: {{ include "wassersport.fullname" . }}
                   key: smtp-pass
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "wassersport.fullname" . }}-app
+                  key: LOG_LEVEL
           volumeMounts:
             - name: tmp
               mountPath: /tmp

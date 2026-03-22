@@ -4,13 +4,14 @@ const express     = require('express');
 const bcrypt      = require('bcrypt');
 const jwt         = require('jsonwebtoken');
 const nodemailer  = require('nodemailer');
-const pool        = require('../db/connection');
+const { pool }    = require('../db/connection');
+const logger      = require('../lib/logger');
 
 const router = express.Router();
 const JWT_SECRET  = process.env.JWT_SECRET  || 'change-me-in-production';
 const COOKIE_OPTS = { httpOnly: true, sameSite: 'Strict', path: '/' };
 
-// ── Nodemailer transporter (configured via SMTP_* env vars) ─────────────────
+// ── Nodemailer transporter ────────────────────────────────────────────────────
 const mailer = nodemailer.createTransport({
   host:   process.env.SMTP_HOST,
   port:   Number(process.env.SMTP_PORT) || 587,
@@ -19,6 +20,24 @@ const mailer = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  // Pass nodemailer's own debug output into our logger at debug level
+  logger: logger.level === 'debug' || logger.level === 'trace',
+  debug:  logger.level === 'debug' || logger.level === 'trace',
+});
+
+// Verify SMTP connectivity at startup — logs result at appropriate level
+mailer.verify((err) => {
+  if (err) {
+    logger.error(
+      { err, smtpHost: process.env.SMTP_HOST, smtpPort: process.env.SMTP_PORT },
+      'smtp: connection verification failed'
+    );
+  } else {
+    logger.info(
+      { smtpHost: process.env.SMTP_HOST, smtpPort: process.env.SMTP_PORT },
+      'smtp: connection verified'
+    );
+  }
 });
 
 // POST /api/login
@@ -35,6 +54,7 @@ router.post('/login', async (req, res) => {
     );
     const user = rows[0];
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      logger.warn({ username }, 'auth: failed login attempt');
       return res.status(401).json({ ok: false, error: 'Ungültige Anmeldedaten.' });
     }
 
@@ -44,9 +64,10 @@ router.post('/login', async (req, res) => {
       { expiresIn: '1d' }
     );
     res.cookie('token', token, COOKIE_OPTS);
+    logger.info({ userId: user.id, username: user.username }, 'auth: login successful');
     return res.json({ ok: true });
   } catch (err) {
-    console.error('Login error:', err);
+    logger.error({ err }, 'auth: login error');
     return res.status(500).json({ ok: false, error: 'Interner Fehler.' });
   }
 });
@@ -54,6 +75,7 @@ router.post('/login', async (req, res) => {
 // POST /api/logout
 router.post('/logout', (req, res) => {
   res.clearCookie('token', { path: '/' });
+  logger.debug('auth: logout');
   return res.json({ ok: true });
 });
 
@@ -71,14 +93,16 @@ router.post('/forgot-password', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'E-Mail-Adresse erforderlich.' });
   }
 
-  const ok = { ok: true, message: 'Falls ein Konto existiert, wurde eine E-Mail gesendet.' };
+  const okResponse = { ok: true, message: 'Falls ein Konto existiert, wurde eine E-Mail gesendet.' };
 
   try {
     const [rows] = await pool.query(
       'SELECT id, username FROM users WHERE email = ?', [email]
     );
-    // Respond immediately — don't leak whether the address exists
-    if (!rows[0]) return res.json(ok);
+    if (!rows[0]) {
+      logger.debug({ email }, 'smtp: forgot-password — no account for this address');
+      return res.json(okResponse);
+    }
     const user = rows[0];
 
     // Generate a 256-bit random token; store only its SHA-256 hash
@@ -92,9 +116,15 @@ router.post('/forgot-password', async (req, res) => {
        ON DUPLICATE KEY UPDATE token_hash = VALUES(token_hash), expires_at = VALUES(expires_at), used_at = NULL`,
       [user.id, tokenHash, expiresAt]
     );
+    logger.debug({ userId: user.id }, 'smtp: reset token stored');
 
-    const base = (process.env.APP_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const base     = (process.env.APP_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
     const resetUrl = `${base}/reset-password.html?token=${rawToken}`;
+
+    logger.debug(
+      { userId: user.id, smtpHost: process.env.SMTP_HOST, smtpPort: process.env.SMTP_PORT, to: email },
+      'smtp: sending password-reset e-mail'
+    );
 
     await mailer.sendMail({
       from:    process.env.SMTP_FROM || process.env.SMTP_USER,
@@ -107,12 +137,14 @@ router.post('/forgot-password', async (req, res) => {
                <p>Falls Du diese Anfrage nicht gestellt hast, kannst Du diese E-Mail ignorieren.</p>
                <p>— Havelkanal Wassersport</p>`,
     });
+
+    logger.info({ userId: user.id }, 'smtp: password-reset e-mail sent');
   } catch (err) {
-    console.error('Forgot-password error:', err);
+    logger.error({ err, smtpHost: process.env.SMTP_HOST }, 'smtp: forgot-password failed');
     // Still return ok to avoid leaking information
   }
 
-  return res.json(ok);
+  return res.json(okResponse);
 });
 
 // POST /api/reset-password
@@ -134,18 +166,20 @@ router.post('/reset-password', async (req, res) => {
     );
     const record = rows[0];
     if (!record) {
+      logger.warn('auth: invalid or expired reset token used');
       return res.status(400).json({ ok: false, error: 'Token ungültig oder abgelaufen.' });
     }
 
+    logger.debug({ userId: record.user_id }, 'auth: valid reset token — updating password');
     const hash = await bcrypt.hash(password, 12);
 
-    // Update password and mark token as used in one transaction
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
       await conn.query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, record.user_id]);
       await conn.query('UPDATE password_reset_tokens SET used_at = NOW() WHERE id = ?', [record.id]);
       await conn.commit();
+      logger.info({ userId: record.user_id }, 'auth: password reset successful');
     } catch (e) {
       await conn.rollback();
       throw e;
@@ -155,7 +189,7 @@ router.post('/reset-password', async (req, res) => {
 
     return res.json({ ok: true });
   } catch (err) {
-    console.error('Reset-password error:', err);
+    logger.error({ err }, 'auth: reset-password error');
     return res.status(500).json({ ok: false, error: 'Interner Fehler.' });
   }
 });

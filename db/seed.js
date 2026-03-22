@@ -5,8 +5,9 @@
  *   docker compose exec app node db/seed.js
  */
 require('dotenv').config();
-const bcrypt = require('bcrypt');
-const pool   = require('./connection');
+const bcrypt        = require('bcrypt');
+const logger        = require('../lib/logger');
+const { pool }      = require('./connection');
 
 (async () => {
   const hash = await bcrypt.hash('demo1234', 10);
@@ -16,6 +17,9 @@ const pool   = require('./connection');
      ON DUPLICATE KEY UPDATE id = id`,
     ['demo', 'demo@example.com', hash]
   );
-  console.log('Demo user inserted: username=demo  password=demo1234');
+  logger.info('seed: demo user ready — username=demo password=demo1234');
   await pool.end();
-})().catch(err => { console.error(err); process.exit(1); });
+})().catch((err) => {
+  logger.error({ err }, 'seed: failed');
+  process.exit(1);
+});

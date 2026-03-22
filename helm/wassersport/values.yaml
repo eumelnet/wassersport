@@ -89,6 +89,10 @@ smtp:
 # ── Application base URL (used in reset-link e-mails) ─────────────────────────
 appBaseUrl: "https://wassersport.example.com"
 
+# ── Log level: trace | debug | info | warn | error | fatal ────────────────────
+# Set to debug to enable SMTP connection details and DB pool diagnostics
+logLevel: "info"
+
 # ── Seed job (creates demo user demo/demo1234) ────────────────────────────────
 seedJob:
   enabled: true
