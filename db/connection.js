@@ -39,20 +39,21 @@ underlying.on('error', (err) => {
 
 /**
  * Verify the pool can reach the database.
- * Call once at startup; exits the process if the DB is unreachable.
+ * Call once at startup; throws if the DB is unreachable so the caller
+ * can decide whether to exit or continue (e.g. calendar works without DB).
  */
 async function connect() {
   logger.info(
     { host: process.env.DB_HOST || 'localhost', database: process.env.DB_NAME || 'wassersport' },
-    'db: connecting…'
+    'db: connecting...'
   );
   let conn;
   try {
     conn = await pool.getConnection();
     logger.info({ host: process.env.DB_HOST || 'localhost' }, 'db: connection pool ready');
   } catch (err) {
-    logger.fatal({ err }, 'db: unable to connect — exiting');
-    process.exit(1);
+    logger.error({ err }, 'db: unable to connect');
+    throw err;
   } finally {
     if (conn) conn.release();
   }

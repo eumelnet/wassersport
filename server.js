@@ -106,7 +106,11 @@ app.use(express.static(path.join(__dirname, 'data')));
 
 // ── Startup: verify DB then listen ───────────────────────────────────────────
 (async () => {
-  await connect();
+  try {
+    await connect();
+  } catch (err) {
+    logger.warn({ err }, 'db: connection failed at startup — continuing without DB (calendar still works)');
+  }
   app.listen(PORT, () => {
     logger.info({ port: PORT, logLevel: logger.level }, 'server started');
   });

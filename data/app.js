@@ -193,12 +193,56 @@ function renderEvents(key) {
   }
 }
 
+function renderUpcoming() {
+  const container = document.getElementById("cal-events");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const today = dateKey(new Date());
+  const upcoming = allEvents.filter(ev => ev.dtstart >= today.replace(/-/g, ""));
+
+  if (upcoming.length === 0) {
+    const p = document.createElement("p");
+    p.className = "cal-empty";
+    p.textContent = "Keine bevorstehenden Termine.";
+    container.appendChild(p);
+    return;
+  }
+
+  const heading = document.createElement("p");
+  heading.className = "cal-upcoming-label";
+  heading.textContent = "Nächste Termine:";
+  container.appendChild(heading);
+
+  for (const ev of upcoming.slice(0, 5)) {
+    const start = parseIcsDate(ev.dtstart);
+    const end   = parseIcsDate(ev.dtend);
+    const dateStr = start ? start.toLocaleDateString("de-DE", { weekday:"short", day:"numeric", month:"long", year:"numeric" }) : "";
+    const timeStr = start
+      ? (end ? `${fmtTime(start)} – ${fmtTime(end)} Uhr` : `${fmtTime(start)} Uhr`)
+      : "";
+
+    const card = document.createElement("div");
+    card.className = "cal-event-card";
+    card.innerHTML = `
+      ${ev.categories ? `<span class="cal-event-category">${ev.categories}</span>` : ""}
+      <h3>${ev.summary}</h3>
+      ${dateStr ? `<div class="cal-event-time">📅 ${dateStr}${timeStr ? ` · ${timeStr}` : ""}</div>` : ""}
+      ${ev.location ? `<div class="cal-event-location">📍 ${ev.location}</div>` : ""}
+      ${ev.description ? `<div class="cal-event-desc">${ev.description}</div>` : ""}
+      <div class="cal-event-ics"><a href="/ics/${ev.file}" download>⬇ Termin herunterladen (.ics)</a></div>
+    `;
+    container.appendChild(card);
+  }
+}
+
 async function initCalendar() {
   await loadEvents();
   const now = new Date();
   currentYear  = now.getFullYear();
   currentMonth = now.getMonth();
   renderCalendar();
+  renderUpcoming();
 
   document.getElementById("cal-prev")?.addEventListener("click", () => {
     currentMonth--;

@@ -133,6 +133,7 @@ a:hover { text-decoration: underline; }
   display: grid; gap: 12px;
 }
 .cal-empty { color: var(--muted); text-align: center; margin: 0; }
+.cal-upcoming-label { font-weight: 600; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .04em; margin: 0 0 4px; }
 
 .cal-event-card {
   border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px;
