@@ -1,0 +1,17 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Havelkanal Wassersport//DE
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:vereinsfest-2026-20260517@havelkanal-wassersport.de
+DTSTART:20260517T120000
+DTEND:20260517T200000
+SUMMARY:Vereinsfest 2026
+DESCRIPTION:Unser jährliches Vereinsfest! Grillabend am Wasser\, Vorführungen\, Preisverleihung und gemütliches Beisammensein. Für Mitglieder und Gäste.
+LOCATION:Havelkanal Wassersport\, Vereinsgelände\, 14641 Nauen
+ORGANIZER;CN=Hafenmeister:mailto:info@havelkanal-wassersport.de
+STATUS:CONFIRMED
+CATEGORIES:Vereinsleben
+END:VEVENT
+END:VCALENDAR

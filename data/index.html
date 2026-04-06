@@ -25,7 +25,7 @@
     <nav class="nav">
       <a href="#activities">Aktivitäten</a>
       <a href="#about">Über uns</a>
-      <a class="btn book-link" href="#book">Nimm teil</a>
+      <a class="btn book-link" href="#kalender">Kalender</a>
       <a class="btn" href="/login.html">Anmelden</a>
     </nav>
   </header>
@@ -47,7 +47,7 @@
         <h1>Sport, Spass und <span class="accent">grün</span> am Havelkanal.</h1>
         <p>Wähle Deinen Sport: Motorboot, Paddeln, Drachenboot, SUP. Klares Wasser, freundliche Menschen und einfach teilzunehmen.</p>
         <div class="hero-cta">
-          <a class="btn primary" href="#book">Nimm teil</a>
+          <a class="btn primary" href="#kalender">Kalender</a>
           <a class="btn ghost" href="#activities">Aktivtäten erkunden</a>
         </div>
       </div>
@@ -67,7 +67,7 @@
             <span>Bis zu 12 Meter</span>
             <span>Bis zu 1 Boot</span>
           </div>
-          <a class="btn tiny" href="#book">Zum Bereich Motorboot</a>
+          <a class="btn tiny" href="#kalender">Zum Bereich Motorboot</a>
         </article>
 
         <article class="card">
@@ -78,7 +78,7 @@
             <span>1er, 2er, 3er</span>
             <span>Bis zu 1 Boot</span>
           </div>
-          <a class="btn tiny" href="#book">Zum Bereich Paddeln</a>
+          <a class="btn tiny" href="#kalender">Zum Bereich Paddeln</a>
         </article>
 
         <article class="card">
@@ -89,7 +89,7 @@
             <span>10-16 Personen</span>
             <span>4 Boote</span>
           </div>
-          <a class="btn tiny" href="#book">Zum Bereich Drachenboot</a>
+          <a class="btn tiny" href="#kalender">Zum Bereich Drachenboot</a>
         </article>
 
         <article class="card">
@@ -100,7 +100,7 @@
             <span>Solo</span>
             <span>1 SUP</span>
           </div>
-          <a class="btn tiny" href="#book">Zum Bereich SUP</a>
+          <a class="btn tiny" href="#kalender">Zum Bereich SUP</a>
         </article>
       </div>
     </section>
@@ -117,37 +117,29 @@
       </div>
     </section>
 
-    <section id="book" class="booking">
+    <section id="kalender" class="kalender">
       <header class="section-header">
-        <h2>Nimm teil</h2>
-        <p>Einfach, schnell und sicher.</p>
+        <h2>Veranstaltungskalender</h2>
+        <p>Alle Termine auf einen Blick.</p>
       </header>
-      <form class="book-form" autocomplete="on">
-        <label>
-          Activity
-          <select required>
-            <option value="">Wähle eine Aktivität</option>
-            <option>Motorboot</option>
-            <option>Paddeln</option>
-            <option>Drachenboot</option>
-            <option>Stand-up Paddeln</option>
-          </select>
-        </label>
-        <label>
-          Datum
-          <input type="date" required />
-        </label>
-        <label>
-          Zeit
-          <input type="time" required />
-        </label>
-        <label>
-          Gäste
-          <input type="number" min="1" max="10" value="2" required />
-        </label>
-        <button class="btn primary" type="submit">Schau nach Aktivitäten</button>
-        <p class="form-note">Hilfe benötigt? <a href="#" class="link">Kontakt</a></p>
-      </form>
+
+      <div class="cal-nav">
+        <button class="btn" id="cal-prev" aria-label="Vorheriger Monat">&#8249;</button>
+        <span class="cal-month-label" id="cal-month-label"></span>
+        <button class="btn" id="cal-next" aria-label="Nächster Monat">&#8250;</button>
+      </div>
+
+      <div class="cal-grid-wrap">
+        <div class="cal-grid" id="cal-grid" role="grid" aria-label="Kalender"></div>
+      </div>
+
+      <div class="cal-events" id="cal-events">
+        <p class="cal-empty">Wähle einen Tag, um Termine zu sehen.</p>
+      </div>
+
+      <div class="cal-legend">
+        <span class="cal-legend-dot"></span> Termin vorhanden
+      </div>
     </section>
   </main>
 
@@ -156,7 +148,7 @@
     <nav class="foot-nav">
       <a href="#about">Über uns</a>
       <a href="#activities">Aktivitäten</a>
-      <a href="#book">Teilnehmen</a>
+      <a href="#kalender">Kalender</a>
     </nav>
   </footer>
 

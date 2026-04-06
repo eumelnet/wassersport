@@ -1,0 +1,17 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Havelkanal Wassersport//DE
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:paddeln-tour-havel-20260503@havelkanal-wassersport.de
+DTSTART:20260503T090000
+DTEND:20260503T150000
+SUMMARY:Paddel-Tour zur Havel
+DESCRIPTION:Geführte Paddel-Tour vom Havelkanal zur Havel und zurück. Ca. 15 km. Für geübte Paddler geeignet. Eigenes Boot erforderlich.
+LOCATION:Havelkanal Wassersport\, Steg B\, 14641 Nauen
+ORGANIZER;CN=Hafenmeister:mailto:info@havelkanal-wassersport.de
+STATUS:CONFIRMED
+CATEGORIES:Paddeln
+END:VEVENT
+END:VCALENDAR

@@ -1,0 +1,17 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Havelkanal Wassersport//DE
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:sup-kurs-anfaenger-20260426@havelkanal-wassersport.de
+DTSTART:20260426T110000
+DTEND:20260426T130000
+SUMMARY:SUP Kurs für Anfänger
+DESCRIPTION:Stand-up Paddeln lernen für Einsteiger. Boards und Paddel werden gestellt. Bitte Badekleidung und Handtuch mitbringen. Max. 8 Teilnehmer.
+LOCATION:Havelkanal Wassersport\, SUP-Bereich\, 14641 Nauen
+ORGANIZER;CN=Hafenmeister:mailto:info@havelkanal-wassersport.de
+STATUS:CONFIRMED
+CATEGORIES:SUP
+END:VEVENT
+END:VCALENDAR

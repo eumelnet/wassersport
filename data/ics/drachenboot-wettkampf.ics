@@ -1,0 +1,17 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Havelkanal Wassersport//DE
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:drachenboot-wettkampf-20260419@havelkanal-wassersport.de
+DTSTART:20260419T090000
+DTEND:20260419T170000
+SUMMARY:Drachenboot Wettkampf
+DESCRIPTION:Regionaler Drachenboot-Wettkampf auf dem Havelkanal. Teams mit 10-16 Personen. Anmeldung erforderlich. Zuschauer herzlich willkommen!
+LOCATION:Havelkanal Wassersport\, Startbereich\, 14641 Nauen
+ORGANIZER;CN=Hafenmeister:mailto:info@havelkanal-wassersport.de
+STATUS:CONFIRMED
+CATEGORIES:Drachenboot
+END:VEVENT
+END:VCALENDAR

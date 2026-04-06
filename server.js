@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 const rateLimit    = require('express-rate-limit');
 const pinoHttp     = require('pino-http');
 
+const fs                = require('fs');
 const logger            = require('./lib/logger');
 const { connect }       = require('./db/connection');
 const { requireAuth }   = require('./middleware/auth');
@@ -66,6 +67,39 @@ app.use('/api/members', requireAuth, membersRouter);
 
 app.get('/mitglieder', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'data', 'members.html'));
+});
+
+// ── Calendar: list & parse ICS files ─────────────────────────────────────────
+app.get('/api/events', (req, res) => {
+  const icsDir = path.join(__dirname, 'data', 'ics');
+  let files;
+  try {
+    files = fs.readdirSync(icsDir).filter(f => f.endsWith('.ics'));
+  } catch {
+    return res.json([]);
+  }
+
+  const events = [];
+  for (const file of files) {
+    const raw = fs.readFileSync(path.join(icsDir, file), 'utf8');
+    const lines = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    const ev = { file };
+    for (const line of lines) {
+      const [key, ...rest] = line.split(':');
+      const val = rest.join(':').replace(/\\,/g, ',').replace(/\\n/g, '\n').trim();
+      if (key === 'SUMMARY')      ev.summary      = val;
+      if (key === 'DESCRIPTION')  ev.description  = val;
+      if (key === 'LOCATION')     ev.location     = val;
+      if (key === 'DTSTART')      ev.dtstart      = val;
+      if (key === 'DTEND')        ev.dtend        = val;
+      if (key === 'CATEGORIES')   ev.categories   = val;
+    }
+    if (ev.summary && ev.dtstart) events.push(ev);
+  }
+
+  // Sort by start date ascending
+  events.sort((a, b) => a.dtstart.localeCompare(b.dtstart));
+  res.json(events);
 });
 
 app.use(express.static(path.join(__dirname, 'data')));

@@ -1,0 +1,17 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Havelkanal Wassersport//DE
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:motorboot-training-20260412@havelkanal-wassersport.de
+DTSTART:20260412T100000
+DTEND:20260412T130000
+SUMMARY:Motorboot Training
+DESCRIPTION:Gemeinsames Motorboot-Training auf dem Havelkanal. Für Anfänger und Fortgeschrittene geeignet. Bitte Schwimmweste mitbringen.
+LOCATION:Havelkanal Wassersport\, Steg A\, 14641 Nauen
+ORGANIZER;CN=Hafenmeister:mailto:info@havelkanal-wassersport.de
+STATUS:CONFIRMED
+CATEGORIES:Motorboot
+END:VEVENT
+END:VCALENDAR

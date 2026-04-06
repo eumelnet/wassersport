@@ -1,0 +1,17 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Havelkanal Wassersport//DE
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:motorboot-sicherheit-20260510@havelkanal-wassersport.de
+DTSTART:20260510T140000
+DTEND:20260510T170000
+SUMMARY:Motorboot Sicherheitstraining
+DESCRIPTION:Pflichttraining für alle Motorboot-Mitglieder. Themen: Notfallmanagement\, Erste Hilfe auf dem Wasser\, Seezeichen und Regeln. Teilnahme empfohlen.
+LOCATION:Havelkanal Wassersport\, Clubhaus\, 14641 Nauen
+ORGANIZER;CN=Hafenmeister:mailto:info@havelkanal-wassersport.de
+STATUS:CONFIRMED
+CATEGORIES:Motorboot
+END:VEVENT
+END:VCALENDAR
