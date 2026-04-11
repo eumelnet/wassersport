@@ -1,5 +1,7 @@
 import { gsap } from "gsap";
 
+const urlLanguage = new URLSearchParams(window.location.search).get("lang") || "de";
+
 /* minimal gsap entrance */
 gsap.from(".hero-copy h1", { y: 12, opacity: 0, duration: 0.6, ease: "power2.out" });
 gsap.from(".hero-copy p", { y: 10, opacity: 0, duration: 0.6, delay: 0.1, ease: "power2.out" });
@@ -30,9 +32,9 @@ const yearEl = document.getElementById("year");
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
 /* captain banner */
-fetch("captain.txt").then(r => r.text()).then(t => {
+fetch(`/api/captain?lang=${encodeURIComponent(urlLanguage)}`).then(r => r.json()).then(data => {
   const el = document.getElementById("captain-text");
-  if (el) el.textContent = t.trim() || "Keine Ankündigungen.";
+  if (el) el.textContent = ((data && data.text) || "").trim() || "Keine Ankündigungen.";
 }).catch(() => {
   const el = document.getElementById("captain-text");
   if (el) el.textContent = "Keine Ankündigungen.";

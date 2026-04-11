@@ -19,7 +19,9 @@ function _deny(req, res) {
   if (req.originalUrl.startsWith('/api/')) {
     return res.status(401).json({ ok: false, error: 'Unauthorized' });
   }
-  return res.redirect('/login.html');
+
+  const language = (req.query && req.query.lang) === 'en' ? 'en' : 'de';
+  return res.redirect(`/login.html?lang=${encodeURIComponent(language)}`);
 }
 
 module.exports = { requireAuth };

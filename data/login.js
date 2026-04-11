@@ -21,7 +21,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 
     const data = await res.json();
     if (data.ok) {
-      window.location.href = '/mitglieder';
+      window.location.href = window.WassersportLang.withLanguage('/mitglieder');
     } else {
       error.textContent = data.error || 'Anmeldung fehlgeschlagen.';
       btn.disabled = false;

@@ -17,6 +17,12 @@
     <nav class="nav">
       <a href="/#activities">Aktivitäten</a>
       <a href="/#about">Über uns</a>
+      <label class="lang-switch" aria-label="Sprache wählen">
+        <select data-language-select>
+          <option value="de">DE</option>
+          <option value="en">EN</option>
+        </select>
+      </label>
       <a class="btn book-link" href="/#book">Nimm teil</a>
     </nav>
   </header>
@@ -53,6 +59,7 @@
     </nav>
   </footer>
 
+  <script src="lang.js"></script>
   <script src="login.js"></script>
   <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 </body>

@@ -40,8 +40,10 @@
   var currentYear, currentMonth, selectedDay = null;
 
   function loadEvents(callback) {
+    var params = new URLSearchParams(window.location.search);
+    var lang = params.get('lang') || 'de';
     var xhr = new XMLHttpRequest();
-    xhr.open("GET", "/api/events", true);
+    xhr.open("GET", "/api/events?lang=" + encodeURIComponent(lang), true);
     xhr.onload = function () {
       if (xhr.status === 200) {
         try { allEvents = JSON.parse(xhr.responseText); } catch(e) { allEvents = []; }

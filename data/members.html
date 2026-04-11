@@ -17,6 +17,12 @@
     <nav class="nav">
       <a href="/#activities">Aktivitäten</a>
       <a href="/#about">Über uns</a>
+      <label class="lang-switch" aria-label="Sprache wählen">
+        <select data-language-select>
+          <option value="de">DE</option>
+          <option value="en">EN</option>
+        </select>
+      </label>
       <span class="auth-user" id="nav-user"></span>
       <button class="btn" id="logout-btn" type="button">Abmelden</button>
     </nav>
@@ -58,6 +64,7 @@
     </nav>
   </footer>
 
+  <script src="lang.js"></script>
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -65,7 +72,7 @@
       // Load current user
       const meRes = await fetch('/api/me');
       if (!meRes.ok) {
-        window.location.href = '/login.html';
+        window.location.href = window.WassersportLang.withLanguage('/login.html');
         return;
       }
       const me = await meRes.json();
@@ -86,7 +93,7 @@
 
     document.getElementById('logout-btn').addEventListener('click', async () => {
       await fetch('/api/logout', { method: 'POST' });
-      window.location.href = '/';
+      window.location.href = window.WassersportLang.withLanguage('/');
     });
 
     init();
