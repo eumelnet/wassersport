@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Havelkanal Wassersport — Sport, Spass & Grün</title>
-  <meta name="description" content="Explore motorboats, paddleboats, rowing, and stand-up paddleboarding on the canal. Fresh, fun, and green." />
+  <title data-i18n="meta.homeTitle">Havelkanal Wassersport - Sport, Spass und Gruen</title>
+  <meta name="description" data-i18n-content="meta.homeDescription" content="Entdecke Motorboot, Paddeln, Drachenboot und SUP am Havelkanal." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
@@ -19,146 +19,149 @@
 <body>
   <header class="site-header">
     <a class="brand" href="#">
-      <img class="brand-mark" src="logo.png" alt="Canal Watersports logo" />
-      <span class="brand-name">Havelkanal Wassersport</span>
+      <img class="brand-mark" src="logo.png" data-i18n-alt="common.logoAlt" alt="Logo von Havelkanal Wassersport" />
+      <span class="brand-name" data-i18n="siteName">Havelkanal Wassersport</span>
     </a>
     <nav class="nav">
-      <a href="#activities">Aktivitäten</a>
-      <a href="#about">Über uns</a>
-      <a class="btn book-link" href="#kalender">Kalender</a>
-      <label class="lang-switch" aria-label="Sprache wählen">
-        <select data-language-select>
+      <a href="#activities" data-i18n="nav.activities">Aktivitäten</a>
+      <a href="#about" data-i18n="nav.about">Über uns</a>
+      <a class="btn book-link" href="#kalender" data-i18n="nav.calendar">Kalender</a>
+      <label class="language-switcher" for="language-select">
+        <span data-i18n="language.label">Sprache</span>
+        <select id="language-select" data-language-switcher data-i18n-aria-label="language.switcherAria" aria-label="Sprache wechseln">
           <option value="de">DE</option>
           <option value="en">EN</option>
+          <option value="pl">PL</option>
+          <option value="nl">NL</option>
         </select>
       </label>
-      <a class="btn" href="/login.html">Anmelden</a>
+      <a class="btn" href="/login.html" data-i18n="nav.login">Anmelden</a>
     </nav>
   </header>
 
   <section id="captain-banner" class="banner" aria-live="polite">
     <div class="banner-inner">
-      <strong>Hafenmeister Ankündigungen:</strong>
-      <span id="captain-text">Loading…</span>
+      <strong data-i18n="home.banner.label">Hafenmeister Ankündigungen:</strong>
+      <span id="captain-text" data-i18n="home.banner.loading">Lade Ankündigungen...</span>
     </div>
   </section>
 
   <main>
     <section class="hero">
       <div class="hero-media">
-        <img src="havelkanal-winter.png" alt="Green canal with boats and paddlers" />
+        <img src="havelkanal-winter.png" data-i18n-alt="home.hero.imageAlt" alt="Gruener Kanal mit Booten und Paddlern" />
         <div class="ripples" aria-hidden="true"></div>
       </div>
       <div class="hero-copy">
-        <h1>Sport, Spass und <span class="accent">grün</span> am Havelkanal.</h1>
-        <p>Wähle Deinen Sport: Motorboot, Paddeln, Drachenboot, SUP. Klares Wasser, freundliche Menschen und einfach teilzunehmen.</p>
+        <h1 data-i18n-html="home.hero.title">Sport, Spass und <span class="accent">grün</span> am Havelkanal.</h1>
+        <p data-i18n="home.hero.text">Wähle Deinen Sport: Motorboot, Paddeln, Drachenboot oder SUP. Klares Wasser, freundliche Menschen und ein schneller Einstieg.</p>
         <div class="hero-cta">
-          <a class="btn primary" href="#kalender">Kalender</a>
-          <a class="btn ghost" href="#activities">Aktivtäten erkunden</a>
+          <a class="btn primary" href="#kalender" data-i18n="home.hero.calendarCta">Kalender</a>
+          <a class="btn ghost" href="#activities" data-i18n="home.hero.exploreCta">Aktivitäten erkunden</a>
         </div>
       </div>
     </section>
 
     <section id="activities" class="activities">
       <header class="section-header">
-        <h2>Wähle Deinen Sport</h2>
-        <p>Allein, im Team, im Verein.</p>
+        <h2 data-i18n="home.activities.title">Wähle Deinen Sport</h2>
+        <p data-i18n="home.activities.subtitle">Allein, im Team oder im Verein.</p>
       </header>
       <div class="grid">
         <article class="card">
-          <img src="motorboat.png" alt="Motorboat icon" />
-          <h3>Motorboot</h3>
-          <p>Bring Dein Motorboot und Motoryacht zum neuen Heimathafen.</p>
+          <img src="motorboat.png" data-i18n-alt="home.activities.motorboatAlt" alt="Motorboot Symbol" />
+          <h3 data-i18n="home.activities.motorboatTitle">Motorboot</h3>
+          <p data-i18n="home.activities.motorboatText">Liegeplatz, Training und sichere Ausfahrten für Motorboot-Mitglieder.</p>
           <div class="meta">
-            <span>Bis zu 12 Meter</span>
-            <span>Bis zu 1 Boot</span>
+            <span data-i18n="home.activities.motorboatMeta1">Bis zu 12 Meter</span>
+            <span data-i18n="home.activities.motorboatMeta2">Training und Sicherheit</span>
           </div>
-          <a class="btn tiny" href="#kalender">Zum Bereich Motorboot</a>
+          <a class="btn tiny" href="#kalender" data-i18n="home.activities.motorboatCta">Motorboot ansehen</a>
         </article>
 
         <article class="card">
-          <img src="paddleboat.png" alt="Paddleboat icon" />
-          <h3>Paddeln</h3>
-          <p>Entpanntes Paddeln auf dem Havelkanal mit eigenem Boot.</p>
+          <img src="paddleboat.png" data-i18n-alt="home.activities.paddlingAlt" alt="Paddeln Symbol" />
+          <h3 data-i18n="home.activities.paddlingTitle">Paddeln</h3>
+          <p data-i18n="home.activities.paddlingText">Entspannte Touren und gemeinsame Ausfahrten auf Havelkanal und Havel.</p>
           <div class="meta">
-            <span>1er, 2er, 3er</span>
-            <span>Bis zu 1 Boot</span>
+            <span data-i18n="home.activities.paddlingMeta1">1er, 2er, 3er</span>
+            <span data-i18n="home.activities.paddlingMeta2">Touren fuer jedes Level</span>
           </div>
-          <a class="btn tiny" href="#kalender">Zum Bereich Paddeln</a>
+          <a class="btn tiny" href="#kalender" data-i18n="home.activities.paddlingCta">Paddeln ansehen</a>
         </article>
 
         <article class="card">
-          <img src="rowing.png" alt="Rowing icon" />
-          <h3>Drachenboot</h3>
-          <p>Sportlicher Wettkampf auf dem Havelkanal.</p>
+          <img src="rowing.png" data-i18n-alt="home.activities.dragonAlt" alt="Drachenboot Symbol" />
+          <h3 data-i18n="home.activities.dragonTitle">Drachenboot</h3>
+          <p data-i18n="home.activities.dragonText">Teamtraining, Wettkampf und Vereinsleben fuer Mannschaften mit Rhythmus.</p>
           <div class="meta">
-            <span>10-16 Personen</span>
-            <span>4 Boote</span>
+            <span data-i18n="home.activities.dragonMeta1">10-16 Personen</span>
+            <span data-i18n="home.activities.dragonMeta2">Regelmaessige Events</span>
           </div>
-          <a class="btn tiny" href="#kalender">Zum Bereich Drachenboot</a>
+          <a class="btn tiny" href="#kalender" data-i18n="home.activities.dragonCta">Drachenboot ansehen</a>
         </article>
 
         <article class="card">
-          <img src="sup.png" alt="Stand-up paddleboarding icon" />
-          <h3>Stand-up Paddeln</h3>
-          <p>Allein auf dem Wasser schweben.</p>
+          <img src="sup.png" data-i18n-alt="home.activities.supAlt" alt="SUP Symbol" />
+          <h3 data-i18n="home.activities.supTitle">Stand-up Paddeln</h3>
+          <p data-i18n="home.activities.supText">Balance, Technik und freie Zeit auf dem Wasser fuer Einsteiger und Erfahrene.</p>
           <div class="meta">
-            <span>Solo</span>
-            <span>1 SUP</span>
+            <span data-i18n="home.activities.supMeta1">Solo oder Kurs</span>
+            <span data-i18n="home.activities.supMeta2">Boards vor Ort</span>
           </div>
-          <a class="btn tiny" href="#kalender">Zum Bereich SUP</a>
+          <a class="btn tiny" href="#kalender" data-i18n="home.activities.supCta">SUP ansehen</a>
         </article>
       </div>
     </section>
 
     <section id="about" class="about">
       <div class="about-content">
-        <h2>Warum Havelkanal?</h2>
+        <h2 data-i18n="home.about.title">Warum Havelkanal?</h2>
         <ul class="features">
-          <li>Klares, sauberes Wasser</li>
-          <li>Ruhiges Gewässer, wenig Schiffsverkehr</li>
-          <li>Gute Anbindung zur Havel und nach Berlin</li>
-          <li>Konstante Wassertiefe, wenig Strömung</li>
+          <li data-i18n="home.about.feature1">Klares, sauberes Wasser</li>
+          <li data-i18n="home.about.feature2">Ruhiges Gewässer mit wenig Schiffsverkehr</li>
+          <li data-i18n="home.about.feature3">Gute Anbindung zur Havel und nach Berlin</li>
+          <li data-i18n="home.about.feature4">Konstante Wassertiefe und wenig Strömung</li>
         </ul>
       </div>
     </section>
 
     <section id="kalender" class="kalender">
       <header class="section-header">
-        <h2>Veranstaltungskalender</h2>
-        <p>Alle Termine auf einen Blick.</p>
+        <h2 data-i18n="home.calendar.title">Veranstaltungskalender</h2>
+        <p data-i18n="home.calendar.subtitle">Alle Termine auf einen Blick.</p>
       </header>
 
       <div class="cal-nav">
-        <button class="btn" id="cal-prev" aria-label="Vorheriger Monat">&#8249;</button>
+        <button class="btn" id="cal-prev" data-i18n-aria-label="home.calendar.prevMonthAria" aria-label="Vorheriger Monat">&#8249;</button>
         <span class="cal-month-label" id="cal-month-label"></span>
-        <button class="btn" id="cal-next" aria-label="Nächster Monat">&#8250;</button>
+        <button class="btn" id="cal-next" data-i18n-aria-label="home.calendar.nextMonthAria" aria-label="Nächster Monat">&#8250;</button>
       </div>
 
       <div class="cal-grid-wrap">
-        <div class="cal-grid" id="cal-grid" role="grid" aria-label="Kalender"></div>
+        <div class="cal-grid" id="cal-grid" role="grid" data-i18n-aria-label="home.calendar.gridAriaLabel" aria-label="Kalender"></div>
       </div>
 
       <div class="cal-events" id="cal-events">
-        <p class="cal-empty">Wähle einen Tag, um Termine zu sehen.</p>
+        <p class="cal-empty" data-i18n="home.calendar.emptySelection">Wähle einen Tag, um Termine zu sehen.</p>
       </div>
 
       <div class="cal-legend">
-        <span class="cal-legend-dot"></span> Termin vorhanden
+        <span class="cal-legend-dot"></span> <span data-i18n="home.calendar.legend">Termin vorhanden</span>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div>© <span id="year"></span> Havelkanal Wassersport</div>
+    <div>© <span id="year"></span> <span data-i18n="siteName">Havelkanal Wassersport</span></div>
     <nav class="foot-nav">
-      <a href="#about">Über uns</a>
-      <a href="#activities">Aktivitäten</a>
-      <a href="#kalender">Kalender</a>
+      <a href="#about" data-i18n="nav.about">Über uns</a>
+      <a href="#activities" data-i18n="nav.activities">Aktivitäten</a>
+      <a href="#kalender" data-i18n="nav.calendar">Kalender</a>
     </nav>
   </footer>
 
-  <script src="lang.js"></script>
+  <script src="i18n.js"></script>
   <script src="calendar.js"></script>
   <script type="module" src="app.js"></script>
 </body>

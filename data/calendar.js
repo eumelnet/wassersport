@@ -2,11 +2,7 @@
 (function () {
   'use strict';
 
-  const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-  const MONTHS = [
-    "Januar","Februar","März","April","Mai","Juni",
-    "Juli","August","September","Oktober","November","Dezember"
-  ];
+  var i18n = window.WassersportI18n;
 
   function parseIcsDate(str) {
     if (!str) return null;
@@ -18,7 +14,7 @@
 
   function fmtTime(date) {
     if (!date) return "";
-    return date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+    return date.toLocaleTimeString(i18n.getLanguage() === 'en' ? 'en-GB' : 'de-DE', { hour: '2-digit', minute: '2-digit' });
   }
 
   function dateKey(date) {
@@ -40,10 +36,8 @@
   var currentYear, currentMonth, selectedDay = null;
 
   function loadEvents(callback) {
-    var params = new URLSearchParams(window.location.search);
-    var lang = params.get('lang') || 'de';
     var xhr = new XMLHttpRequest();
-    xhr.open("GET", "/api/events?lang=" + encodeURIComponent(lang), true);
+    xhr.open("GET", "/api/events", true);
     xhr.onload = function () {
       if (xhr.status === 200) {
         try { allEvents = JSON.parse(xhr.responseText); } catch(e) { allEvents = []; }
@@ -78,13 +72,17 @@
     var label = document.getElementById("cal-month-label");
     if (!grid || !label) return;
 
-    label.textContent = MONTHS[currentMonth] + " " + currentYear;
+    var currentDate = new Date(currentYear, currentMonth, 1);
+    label.textContent = currentDate.toLocaleDateString(i18n.getLanguage() === 'en' ? 'en-GB' : 'de-DE', { month: 'long', year: 'numeric' });
     grid.innerHTML = "";
 
-    for (var wi = 0; wi < WEEKDAYS.length; wi++) {
+    var weekStart = new Date(2024, 0, 1);
+
+    for (var wi = 0; wi < 7; wi++) {
       var h = document.createElement("div");
       h.className = "cal-day-header";
-      h.textContent = WEEKDAYS[wi];
+      var weekday = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + wi);
+      h.textContent = weekday.toLocaleDateString(i18n.getLanguage() === 'en' ? 'en-GB' : 'de-DE', { weekday: 'short' });
       grid.appendChild(h);
     }
 
@@ -122,7 +120,7 @@
     cell.setAttribute("role", "gridcell");
     cell.setAttribute("tabindex", "0");
     cell.setAttribute("aria-label",
-      date.toLocaleDateString("de-DE", { day:"numeric", month:"long", year:"numeric" }));
+      date.toLocaleDateString(i18n.getLanguage() === 'en' ? 'en-GB' : 'de-DE', { day:"numeric", month:"long", year:"numeric" }));
     cell.textContent = date.getDate();
 
     if (otherMonth)       cell.classList.add("other-month");
@@ -147,28 +145,29 @@
   }
 
   function makeEventCard(ev, showDate) {
-    var start = parseIcsDate(ev.dtstart);
-    var end   = parseIcsDate(ev.dtend);
+    var localized = i18n.localizeEvent(ev);
+    var start = parseIcsDate(localized.dtstart);
+    var end   = parseIcsDate(localized.dtend);
     var timeStr = start
-      ? (end ? fmtTime(start) + " \u2013 " + fmtTime(end) + " Uhr" : fmtTime(start) + " Uhr")
+      ? (end ? fmtTime(start) + " \u2013 " + fmtTime(end) : fmtTime(start))
       : "";
     var dateStr = (showDate && start)
-      ? start.toLocaleDateString("de-DE", { weekday:"short", day:"numeric", month:"long", year:"numeric" })
+      ? start.toLocaleDateString(i18n.getLanguage() === 'en' ? 'en-GB' : 'de-DE', { weekday:"short", day:"numeric", month:"long", year:"numeric" })
       : "";
 
     var card = document.createElement("div");
     card.className = "cal-event-card";
     var html = "";
-    if (ev.categories) html += '<span class="cal-event-category">' + escHtml(ev.categories) + '</span>';
-    html += '<h3>' + escHtml(ev.summary) + '</h3>';
+    if (localized.categories) html += '<span class="cal-event-category">' + escHtml(localized.categories) + '</span>';
+    html += '<h3>' + escHtml(localized.summary) + '</h3>';
     if (showDate && dateStr) {
-      html += '<div class="cal-event-time">\uD83D\uDCC5 ' + escHtml(dateStr) + (timeStr ? ' \u00B7 ' + escHtml(timeStr) : '') + '</div>';
+      html += '<div class="cal-event-time">' + escHtml(i18n.t('home.calendar.whenLabel')) + ': ' + escHtml(dateStr) + (timeStr ? ' \u00B7 ' + escHtml(timeStr) : '') + '</div>';
     } else if (timeStr) {
-      html += '<div class="cal-event-time">\uD83D\uDD50 ' + escHtml(timeStr) + '</div>';
+      html += '<div class="cal-event-time">' + escHtml(i18n.t('home.calendar.timeLabel')) + ': ' + escHtml(timeStr) + '</div>';
     }
-    if (ev.location)    html += '<div class="cal-event-location">\uD83D\uDCCD ' + escHtml(ev.location) + '</div>';
-    if (ev.description) html += '<div class="cal-event-desc">' + escHtml(ev.description) + '</div>';
-    html += '<div class="cal-event-ics"><a href="/ics/' + encodeURIComponent(ev.file) + '" download>\u2B07 Termin herunterladen (.ics)</a></div>';
+    if (localized.location)    html += '<div class="cal-event-location">' + escHtml(i18n.t('home.calendar.locationLabel')) + ': ' + escHtml(localized.location) + '</div>';
+    if (localized.description) html += '<div class="cal-event-desc">' + escHtml(localized.description) + '</div>';
+    html += '<div class="cal-event-ics"><a href="/ics/' + encodeURIComponent(localized.file) + '" download>' + escHtml(i18n.t('home.calendar.downloadIcs')) + '</a></div>';
     card.innerHTML = html;
     return card;
   }
@@ -180,7 +179,7 @@
 
     var evs = eventsByDay[key];
     if (!evs || evs.length === 0) {
-      container.innerHTML = '<p class="cal-empty">Keine Termine an diesem Tag.</p>';
+      container.innerHTML = '<p class="cal-empty">' + escHtml(i18n.t('home.calendar.emptyDay')) + '</p>';
       return;
     }
     for (var i = 0; i < evs.length; i++) {
@@ -199,13 +198,13 @@
     });
 
     if (upcoming.length === 0) {
-      container.innerHTML = '<p class="cal-empty">Keine bevorstehenden Termine.</p>';
+      container.innerHTML = '<p class="cal-empty">' + escHtml(i18n.t('home.calendar.emptyUpcoming')) + '</p>';
       return;
     }
 
     var heading = document.createElement("p");
     heading.className = "cal-upcoming-label";
-    heading.textContent = "N\u00E4chste Termine:";
+    heading.textContent = i18n.t('home.calendar.upcomingLabel');
     container.appendChild(heading);
 
     var limit = Math.min(upcoming.length, 5);
@@ -243,6 +242,15 @@
         renderCalendar();
       });
     }
+
+    document.addEventListener(i18n.eventName, function () {
+      renderCalendar();
+      if (selectedDay) {
+        renderEventsForDay(selectedDay);
+      } else {
+        renderUpcoming();
+      }
+    });
   }
 
   if (document.readyState === "loading") {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mitglieder — Havelkanal Wassersport</title>
+  <title data-i18n="meta.membersTitle">Mitglieder - Havelkanal Wassersport</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
@@ -11,43 +11,46 @@
 <body>
   <header class="site-header">
     <a class="brand" href="/">
-      <img class="brand-mark" src="logo.png" alt="Canal Watersports logo" />
-      <span class="brand-name">Havelkanal Wassersport</span>
+      <img class="brand-mark" src="logo.png" data-i18n-alt="common.logoAlt" alt="Logo von Havelkanal Wassersport" />
+      <span class="brand-name" data-i18n="siteName">Havelkanal Wassersport</span>
     </a>
     <nav class="nav">
-      <a href="/#activities">Aktivitäten</a>
-      <a href="/#about">Über uns</a>
-      <label class="lang-switch" aria-label="Sprache wählen">
-        <select data-language-select>
+      <a href="/#activities" data-i18n="nav.activities">Aktivitäten</a>
+      <a href="/#about" data-i18n="nav.about">Über uns</a>
+      <label class="language-switcher" for="language-select">
+        <span data-i18n="language.label">Sprache</span>
+        <select id="language-select" data-language-switcher data-i18n-aria-label="language.switcherAria" aria-label="Sprache wechseln">
           <option value="de">DE</option>
           <option value="en">EN</option>
+          <option value="pl">PL</option>
+          <option value="nl">NL</option>
         </select>
       </label>
       <span class="auth-user" id="nav-user"></span>
-      <button class="btn" id="logout-btn" type="button">Abmelden</button>
+      <button class="btn" id="logout-btn" type="button" data-i18n="nav.logout">Abmelden</button>
     </nav>
   </header>
 
   <main>
     <section class="members-section">
       <header class="section-header">
-        <h1>Mitgliederbereich</h1>
-        <p id="welcome-msg">Willkommen!</p>
+        <h1 data-i18n="members.heading">Mitgliederbereich</h1>
+        <p id="welcome-msg" data-i18n="members.welcomePlaceholder">Willkommen!</p>
       </header>
 
       <div class="members-content">
         <div class="about-content">
-          <h2>Mitgliederliste</h2>
+          <h2 id="members-heading" data-i18n="members.listHeading">Mitgliederliste</h2>
           <table class="members-table" id="members-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Sport</th>
-                <th>Mitglied seit</th>
+                <th data-i18n="members.name">Name</th>
+                <th data-i18n="members.sport">Sport</th>
+                <th data-i18n="members.since">Mitglied seit</th>
               </tr>
             </thead>
             <tbody id="members-tbody">
-              <tr><td colspan="3">Lade Daten…</td></tr>
+              <tr><td colspan="3" data-i18n="members.loading">Lade Daten...</td></tr>
             </tbody>
           </table>
         </div>
@@ -56,44 +59,68 @@
   </main>
 
   <footer class="site-footer">
-    <div>© <span id="year"></span> Havelkanal Wassersport</div>
+    <div>© <span id="year"></span> <span data-i18n="siteName">Havelkanal Wassersport</span></div>
     <nav class="foot-nav">
-      <a href="/#about">Über uns</a>
-      <a href="/#activities">Aktivitäten</a>
-      <a href="/#book">Teilnehmen</a>
+      <a href="/#about" data-i18n="nav.about">Über uns</a>
+      <a href="/#activities" data-i18n="nav.activities">Aktivitäten</a>
+      <a href="/#kalender" data-i18n="nav.join">Mitmachen</a>
     </nav>
   </footer>
 
-  <script src="lang.js"></script>
+  <script src="i18n.js"></script>
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
 
+    let loadedMembers = [];
+
+    function renderMembers() {
+      const tbody = document.getElementById('members-tbody');
+      if (!tbody) return;
+
+      if (!loadedMembers.length) {
+        tbody.innerHTML = '<tr><td colspan="3">' + window.WassersportI18n.t('members.empty') + '</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = loadedMembers.map((member) => (
+        '<tr><td>' + member.name + '</td><td>' + window.WassersportI18n.localizeSport(member.sport) + '</td><td>' + member.since + '</td></tr>'
+      )).join('');
+    }
+
     async function init() {
-      // Load current user
       const meRes = await fetch('/api/me');
       if (!meRes.ok) {
-        window.location.href = window.WassersportLang.withLanguage('/login.html');
+        window.location.href = window.WassersportI18n.withLanguage('/login.html');
         return;
       }
       const me = await meRes.json();
       document.getElementById('nav-user').textContent = me.username;
       document.getElementById('welcome-msg').textContent =
-        'Willkommen, ' + me.username + '!';
+        window.WassersportI18n.t('members.welcome', { username: me.username });
 
-      // Load member data
       const dataRes = await fetch('/api/members/data');
       if (dataRes.ok) {
-        const { members } = await dataRes.json();
-        const tbody = document.getElementById('members-tbody');
-        tbody.innerHTML = members.map(m =>
-          '<tr><td>' + m.name + '</td><td>' + m.sport + '</td><td>' + m.since + '</td></tr>'
-        ).join('');
+        const { listHeading, members } = await dataRes.json();
+        if (listHeading) {
+          document.getElementById('members-heading').textContent = listHeading;
+        }
+        loadedMembers = members || [];
+        renderMembers();
       }
     }
 
+    document.addEventListener(window.WassersportI18n.eventName, () => {
+      const navUser = document.getElementById('nav-user').textContent;
+      if (navUser) {
+        document.getElementById('welcome-msg').textContent =
+          window.WassersportI18n.t('members.welcome', { username: navUser });
+      }
+      renderMembers();
+    });
+
     document.getElementById('logout-btn').addEventListener('click', async () => {
       await fetch('/api/logout', { method: 'POST' });
-      window.location.href = window.WassersportLang.withLanguage('/');
+      window.location.href = window.WassersportI18n.withLanguage('/');
     });
 
     init();

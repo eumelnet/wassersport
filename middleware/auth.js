@@ -20,7 +20,9 @@ function _deny(req, res) {
     return res.status(401).json({ ok: false, error: 'Unauthorized' });
   }
 
-  const language = (req.query && req.query.lang) === 'en' ? 'en' : 'de';
+  const SUPPORTED = ['de', 'en', 'pl', 'nl'];
+  const lang = req.query && req.query.lang;
+  const language = SUPPORTED.includes(lang) ? lang : 'de';
   return res.redirect(`/login.html?lang=${encodeURIComponent(language)}`);
 }
 

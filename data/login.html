@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Anmelden — Havelkanal Wassersport</title>
+  <title data-i18n="meta.loginTitle">Anmelden - Havelkanal Wassersport</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
@@ -11,55 +11,58 @@
 <body>
   <header class="site-header">
     <a class="brand" href="/">
-      <img class="brand-mark" src="logo.png" alt="Canal Watersports logo" />
-      <span class="brand-name">Havelkanal Wassersport</span>
+      <img class="brand-mark" src="logo.png" data-i18n-alt="common.logoAlt" alt="Logo von Havelkanal Wassersport" />
+      <span class="brand-name" data-i18n="siteName">Havelkanal Wassersport</span>
     </a>
     <nav class="nav">
-      <a href="/#activities">Aktivitäten</a>
-      <a href="/#about">Über uns</a>
-      <label class="lang-switch" aria-label="Sprache wählen">
-        <select data-language-select>
+      <a href="/#activities" data-i18n="nav.activities">Aktivitäten</a>
+      <a href="/#about" data-i18n="nav.about">Über uns</a>
+      <label class="language-switcher" for="language-select">
+        <span data-i18n="language.label">Sprache</span>
+        <select id="language-select" data-language-switcher data-i18n-aria-label="language.switcherAria" aria-label="Sprache wechseln">
           <option value="de">DE</option>
           <option value="en">EN</option>
+          <option value="pl">PL</option>
+          <option value="nl">NL</option>
         </select>
       </label>
-      <a class="btn book-link" href="/#book">Nimm teil</a>
+      <a class="btn book-link" href="/#kalender" data-i18n="nav.join">Mitmachen</a>
     </nav>
   </header>
 
   <main>
     <section class="auth-section">
       <div class="auth-box">
-        <h1>Mitgliederbereich</h1>
-        <p class="auth-subtitle">Bitte melde Dich an, um fortzufahren.</p>
+        <h1 data-i18n="login.heading">Mitgliederbereich</h1>
+        <p class="auth-subtitle" data-i18n="login.subtitle">Bitte melde Dich an, um fortzufahren.</p>
 
         <form class="auth-form" id="login-form" autocomplete="on" novalidate>
-          <label>
-            Benutzername
+          <label for="username">
+            <span data-i18n="login.username">Benutzername</span>
             <input type="text" name="username" id="username" autocomplete="username" required />
           </label>
-          <label>
-            Passwort
+          <label for="password">
+            <span data-i18n="login.password">Passwort</span>
             <input type="password" name="password" id="password" autocomplete="current-password" required />
           </label>
           <p class="auth-error" id="login-error" aria-live="polite"></p>
-          <button class="btn primary" type="submit" id="login-btn">Anmelden</button>
-          <p class="auth-hint"><a href="/forgot-password.html">Passwort vergessen?</a></p>
+          <button class="btn primary" type="submit" id="login-btn" data-i18n="login.submit">Anmelden</button>
+          <p class="auth-hint"><a href="/forgot-password.html" data-i18n="login.forgot">Passwort vergessen?</a></p>
         </form>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div>© <span id="year"></span> Havelkanal Wassersport</div>
+    <div>© <span id="year"></span> <span data-i18n="siteName">Havelkanal Wassersport</span></div>
     <nav class="foot-nav">
-      <a href="/#about">Über uns</a>
-      <a href="/#activities">Aktivitäten</a>
-      <a href="/#book">Teilnehmen</a>
+      <a href="/#about" data-i18n="nav.about">Über uns</a>
+      <a href="/#activities" data-i18n="nav.activities">Aktivitäten</a>
+      <a href="/#kalender" data-i18n="nav.join">Mitmachen</a>
     </nav>
   </footer>
 
-  <script src="lang.js"></script>
+  <script src="i18n.js"></script>
   <script src="login.js"></script>
   <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 </body>

@@ -1,6 +1,6 @@
 import { gsap } from "gsap";
 
-const urlLanguage = new URLSearchParams(window.location.search).get("lang") || "de";
+const i18n = window.WassersportI18n;
 
 /* minimal gsap entrance */
 gsap.from(".hero-copy h1", { y: 12, opacity: 0, duration: 0.6, ease: "power2.out" });
@@ -31,11 +31,28 @@ if (media && ripples) {
 const yearEl = document.getElementById("year");
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-/* captain banner */
-fetch(`/api/captain?lang=${encodeURIComponent(urlLanguage)}`).then(r => r.json()).then(data => {
+/* captain banner — uses /api/captain?lang= for DeepL translation */
+function renderCaptainFallback() {
   const el = document.getElementById("captain-text");
-  if (el) el.textContent = ((data && data.text) || "").trim() || "Keine Ankündigungen.";
-}).catch(() => {
+  if (el) el.textContent = i18n.t("home.banner.empty");
+}
+
+function loadCaptainText() {
+  const language = i18n.getLanguage();
   const el = document.getElementById("captain-text");
-  if (el) el.textContent = "Keine Ankündigungen.";
-});
+  if (el) el.textContent = i18n.t("home.banner.loading");
+
+  fetch(`/api/captain?lang=${encodeURIComponent(language)}`)
+    .then((r) => {
+      if (!r.ok) throw new Error("fetch failed");
+      return r.json();
+    })
+    .then((data) => {
+      const text = (data && data.text || "").trim();
+      if (el) el.textContent = text || i18n.t("home.banner.empty");
+    })
+    .catch(renderCaptainFallback);
+}
+
+loadCaptainText();
+document.addEventListener(i18n.eventName, loadCaptainText);

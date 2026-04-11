@@ -1,5 +1,7 @@
 'use strict';
 
+const i18n = window.WassersportI18n;
+
 document.getElementById('login-form').addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -10,7 +12,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 
   error.textContent = '';
   btn.disabled = true;
-  btn.textContent = 'Einen Moment…';
+  btn.textContent = i18n.t('login.loading');
 
   try {
     const res = await fetch('/api/login', {
@@ -21,15 +23,15 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 
     const data = await res.json();
     if (data.ok) {
-      window.location.href = window.WassersportLang.withLanguage('/mitglieder');
+      window.location.href = i18n.withLanguage('/mitglieder');
     } else {
-      error.textContent = data.error || 'Anmeldung fehlgeschlagen.';
+      error.textContent = data.error || i18n.t('login.failed');
       btn.disabled = false;
-      btn.textContent = 'Anmelden';
+      btn.textContent = i18n.t('login.submit');
     }
   } catch {
-    error.textContent = 'Netzwerkfehler. Bitte erneut versuchen.';
+    error.textContent = i18n.t('login.network');
     btn.disabled = false;
-    btn.textContent = 'Anmelden';
+    btn.textContent = i18n.t('login.submit');
   }
 });
