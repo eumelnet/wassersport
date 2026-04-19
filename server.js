@@ -89,6 +89,92 @@ app.get('/mitglieder', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'data', 'members.html'));
 });
 
+// ── Blog: list & read individual posts ──────────────────────────────────────
+const BLOG_DIR = path.join(__dirname, 'data', 'blog');
+
+function readBlogPost(slug) {
+  // Reject anything that isn't a plain slug to avoid path traversal
+  if (!/^[a-z0-9][a-z0-9-]*$/i.test(slug)) return null;
+  const file = path.join(BLOG_DIR, `${slug}.json`);
+  if (!file.startsWith(BLOG_DIR + path.sep)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+async function translatePost(post, targetLanguage, fields) {
+  try {
+    return await translateObjectFields(post, fields, targetLanguage);
+  } catch (err) {
+    logger.warn({ err, targetLanguage, slug: post && post.slug }, 'blog: translation failed, returning source');
+    return post;
+  }
+}
+
+app.get('/api/blog', async (req, res) => {
+  const targetLanguage = normalizeTargetLanguage(req.query.lang);
+  let files;
+  try {
+    files = fs.readdirSync(BLOG_DIR).filter((f) => f.endsWith('.json'));
+  } catch {
+    return res.json([]);
+  }
+
+  const posts = [];
+  for (const file of files) {
+    const slug = file.replace(/\.json$/, '');
+    const post = readBlogPost(slug);
+    if (!post) continue;
+    // Summary view: only translate the fields shown in the news section
+    const summary = {
+      slug: post.slug || slug,
+      date: post.date,
+      category: post.category,
+      hero: post.hero,
+      heroAlt: post.heroAlt,
+      title: post.title,
+      excerpt: post.excerpt,
+    };
+    const translated = await translatePost(summary, targetLanguage, ['category', 'heroAlt', 'title', 'excerpt']);
+    posts.push(translated);
+  }
+
+  // Newest first by ISO date
+  posts.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  return res.json(posts);
+});
+
+app.get('/api/blog/:slug', async (req, res) => {
+  const targetLanguage = normalizeTargetLanguage(req.query.lang);
+  const post = readBlogPost(req.params.slug);
+  if (!post) return res.status(404).json({ ok: false, error: 'not_found' });
+
+  const translated = await translatePost(
+    post,
+    targetLanguage,
+    ['category', 'heroAlt', 'title', 'excerpt', 'bodyHtml', 'author']
+  );
+
+  // Gallery captions / alts
+  if (Array.isArray(translated.gallery)) {
+    const gallery = [];
+    for (const item of translated.gallery) {
+      gallery.push(await translatePost(item, targetLanguage, ['alt', 'caption']));
+    }
+    translated.gallery = gallery;
+  }
+  return res.json(translated);
+});
+
+// Friendly URL: /blog/<slug> serves the shared post shell
+app.get('/blog/:slug', (req, res) => {
+  if (!/^[a-z0-9][a-z0-9-]*$/i.test(req.params.slug)) return res.status(404).end();
+  res.sendFile(path.join(__dirname, 'data', 'blog-post.html'));
+});
+
+
 // ── Calendar: list & parse ICS files ─────────────────────────────────────────
 app.get('/api/events', async (req, res) => {
   const icsDir = path.join(__dirname, 'data', 'ics');

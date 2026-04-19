@@ -25,6 +25,7 @@
     <nav class="nav">
       <a href="#activities" data-i18n="nav.activities">Aktivitäten</a>
       <a href="#about" data-i18n="nav.about">Über uns</a>
+      <a href="#news" data-i18n="nav.news">Neuigkeiten</a>
       <a class="btn book-link" href="#kalender" data-i18n="nav.calendar">Kalender</a>
       <label class="language-switcher" for="language-select">
         <span data-i18n="language.label">Sprache</span>
@@ -126,6 +127,16 @@
       </div>
     </section>
 
+    <section id="news" class="news">
+      <header class="section-header">
+        <h2 data-i18n="home.news.title">Neuigkeiten</h2>
+        <p data-i18n="home.news.subtitle">Berichte, Rennen und Vereinsleben.</p>
+      </header>
+      <div class="news-grid" id="news-grid" aria-live="polite">
+        <p class="news-empty" data-i18n="home.news.loading">Lade Beiträge...</p>
+      </div>
+    </section>
+
     <section id="kalender" class="kalender">
       <header class="section-header">
         <h2 data-i18n="home.calendar.title">Veranstaltungskalender</h2>
@@ -157,12 +168,15 @@
     <nav class="foot-nav">
       <a href="#about" data-i18n="nav.about">Über uns</a>
       <a href="#activities" data-i18n="nav.activities">Aktivitäten</a>
+      <a href="#news" data-i18n="nav.news">Neuigkeiten</a>
       <a href="#kalender" data-i18n="nav.calendar">Kalender</a>
     </nav>
   </footer>
 
   <script src="i18n.js"></script>
+  <script src="captain.js"></script>
   <script src="calendar.js"></script>
+  <script src="news.js"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>
