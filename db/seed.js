@@ -131,6 +131,58 @@ const IMPRESSUM_BLOCKS = [
   },
 ];
 
+// ── Schema migrations ────────────────────────────────────────────────────────
+// Idempotent: brings existing databases up to current schema.
+// `init.sql` is only executed on first MySQL init, so upgrades of existing
+// deployments need these ALTERs. Safe to run repeatedly.
+async function columnExists(conn, table, column) {
+  const [rows] = await conn.query(
+    `SELECT 1
+       FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name   = ?
+        AND column_name  = ?
+      LIMIT 1`,
+    [table, column]
+  );
+  return rows.length > 0;
+}
+
+async function tableExists(conn, table) {
+  const [rows] = await conn.query(
+    `SELECT 1
+       FROM information_schema.tables
+      WHERE table_schema = DATABASE()
+        AND table_name   = ?
+      LIMIT 1`,
+    [table]
+  );
+  return rows.length > 0;
+}
+
+async function addColumnIfMissing(conn, table, column, ddl) {
+  if (!(await tableExists(conn, table))) return; // fresh DB: init.sql handles it
+  if (await columnExists(conn, table, column)) return;
+  logger.info({ table, column }, 'migrate: adding missing column');
+  await conn.query(`ALTER TABLE \`${table}\` ADD COLUMN ${ddl}`);
+}
+
+async function migrate(conn) {
+  // users.role — introduced with admin role / CMS
+  await addColumnIfMissing(conn, 'users', 'role',
+    `role VARCHAR(16) NOT NULL DEFAULT 'member'`);
+
+  // pages: ensure table exists before migrating its columns
+  if (await tableExists(conn, 'pages')) {
+    await addColumnIfMissing(conn, 'pages', 'draft_blocks_json', `draft_blocks_json JSON NULL`);
+    await addColumnIfMissing(conn, 'pages', 'draft_title',       `draft_title VARCHAR(200) NULL`);
+    await addColumnIfMissing(conn, 'pages', 'published_at',      `published_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
+    await addColumnIfMissing(conn, 'pages', 'draft_updated_at',  `draft_updated_at TIMESTAMP NULL DEFAULT NULL`);
+    await addColumnIfMissing(conn, 'pages', 'updated_by',        `updated_by INT UNSIGNED NULL`);
+    await addColumnIfMissing(conn, 'pages', 'draft_updated_by',  `draft_updated_by INT UNSIGNED NULL`);
+  }
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 async function upsertUser(conn, { username, email, password, role }) {
   const hash = await bcrypt.hash(password, 10);
@@ -171,6 +223,9 @@ async function upsertSetting(conn, key, value) {
 (async () => {
   const conn = await pool.getConnection();
   try {
+    // Schema migrations (idempotent)
+    await migrate(conn);
+
     // Users
     await upsertUser(conn, { username: 'demo',  email: 'demo@example.com',  password: 'demo1234',  role: 'member' });
     await upsertUser(conn, { username: 'admin', email: 'admin@example.com', password: 'admin1234', role: 'admin'  });
