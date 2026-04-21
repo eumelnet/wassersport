@@ -126,6 +126,7 @@ async function viewPages() {
       h('div', { class:'page-card-actions' },
         h('a', { class:'btn', href:`/${p.slug === 'home' ? '' : p.slug}`, target:'_blank' }, 'Live ansehen'),
         p.has_draft ? h('a', { class:'btn', href:`/admin/preview/${p.slug}`, target:'_blank' }, 'Entwurf ansehen') : null,
+        h('button', { class:'btn', onclick: () => duplicatePage(p.slug, p.title) }, 'Duplizieren'),
         h('a', { class:'btn primary', href:`#pages/${p.slug}` }, 'Bearbeiten')
       )
     ));
@@ -643,6 +644,30 @@ async function savePage(opts) {
   } catch (err) {
     toast('Fehler: ' + err.message, true);
     return false;
+  }
+}
+
+async function duplicatePage(srcSlug, srcTitle) {
+  const suggested = srcSlug + '-kopie';
+  const newSlug = prompt(
+    `Seite "${srcTitle}" duplizieren.\n\nNeuer Slug (klein, nur a–z, 0–9, Bindestrich):`,
+    suggested
+  );
+  if (!newSlug) return;
+  const cleaned = newSlug.trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(cleaned)) {
+    toast('Ungültiger Slug. Nur kleine Buchstaben, Ziffern und Bindestriche.', true);
+    return;
+  }
+  try {
+    const r = await api(`/api/admin/pages/${srcSlug}/duplicate`, {
+      method: 'POST',
+      body: JSON.stringify({ new_slug: cleaned }),
+    });
+    toast('Seite dupliziert.');
+    location.hash = '#pages/' + r.slug;
+  } catch (err) {
+    toast('Fehler: ' + err.message, true);
   }
 }
 

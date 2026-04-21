@@ -246,6 +246,67 @@ router.delete('/pages/:slug', async (req, res) => {
   res.json({ ok: true });
 });
 
+/**
+ * POST /pages/:slug/duplicate  { new_slug, new_title? }
+ * Copies the LIVE version (title + blocks_json) of the source page to a new
+ * slug. The copy is created as both live and draft (no pending draft),
+ * mirroring how PUT /pages/:slug handles new-page creation.
+ * `is_listed` and `requires_auth` are carried over.
+ */
+router.post('/pages/:slug/duplicate', async (req, res) => {
+  const srcSlug = req.params.slug;
+  const newSlug = (req.body && typeof req.body.new_slug === 'string') ? req.body.new_slug.trim().toLowerCase() : '';
+  const newTitle = (req.body && typeof req.body.new_title === 'string') ? req.body.new_title.trim() : '';
+
+  if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(newSlug)) {
+    return res.status(400).json({ ok: false, error: 'Neuer Slug muss klein, alphanumerisch, mit Bindestrichen sein.' });
+  }
+  if (newSlug === srcSlug) {
+    return res.status(400).json({ ok: false, error: 'Neuer Slug muss sich vom Original unterscheiden.' });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [src] = await conn.query(
+      'SELECT title, requires_auth, is_listed, blocks_json FROM pages WHERE slug = ?',
+      [srcSlug]
+    );
+    if (!src[0]) {
+      await conn.rollback();
+      return res.status(404).json({ ok: false, error: 'Quellseite nicht gefunden.' });
+    }
+
+    const [existing] = await conn.query('SELECT slug FROM pages WHERE slug = ?', [newSlug]);
+    if (existing[0]) {
+      await conn.rollback();
+      return res.status(409).json({ ok: false, error: 'Ein Seite mit diesem Slug existiert bereits.' });
+    }
+
+    const title = newTitle || `${src[0].title} (Kopie)`;
+    await conn.query(
+      `INSERT INTO pages (slug, title, draft_title, requires_auth, is_listed,
+                          blocks_json, draft_blocks_json,
+                          published_at, draft_updated_at,
+                          updated_by, draft_updated_by)
+       VALUES (?, ?, NULL, ?, ?, CAST(? AS JSON), NULL, NOW(), NULL, ?, NULL)`,
+      [newSlug, title, src[0].requires_auth, src[0].is_listed,
+       JSON.stringify(src[0].blocks_json), req.user.id]
+    );
+
+    await conn.commit();
+    logger.info({ srcSlug, newSlug, userId: req.user.id }, 'cms: page duplicated');
+    res.json({ ok: true, slug: newSlug });
+  } catch (err) {
+    await conn.rollback();
+    logger.error({ err, srcSlug, newSlug }, 'cms: duplicate failed');
+    res.status(500).json({ ok: false, error: 'Duplizieren fehlgeschlagen.' });
+  } finally {
+    conn.release();
+  }
+});
+
 // Revisions
 router.get('/pages/:slug/revisions', async (req, res) => {
   const [rows] = await pool.query(

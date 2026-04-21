@@ -43,6 +43,7 @@ app.use(helmet({
       fontSrc:     ["'self'", 'https://fonts.gstatic.com', 'data:'],
       imgSrc:      ["'self'", 'data:', 'blob:'],
       connectSrc:  ["'self'"],
+      frameSrc:    ["'self'", 'https://www.youtube-nocookie.com', 'https://www.youtube.com'],
     },
   },
 }));
