@@ -10,9 +10,11 @@ const pinoHttp     = require('pino-http');
 const fs                = require('fs');
 const logger            = require('./lib/logger');
 const { connect }       = require('./db/connection');
-const { requireAuth }   = require('./middleware/auth');
+const { requireAuth, requireAdmin, optionalAuth } = require('./middleware/auth');
 const authRouter        = require('./routes/auth');
 const membersRouter     = require('./routes/members');
+const adminRouter       = require('./routes/admin');
+const { router: pagesRouter, renderPageBySlug } = require('./routes/pages');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -38,14 +40,14 @@ app.use(helmet({
       defaultSrc:  ["'self'"],
       scriptSrc:   ["'self'", "'unsafe-inline'", 'https://cdn.skypack.dev', 'https://fonts.googleapis.com'],
       styleSrc:    ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-      fontSrc:     ["'self'", 'https://fonts.gstatic.com'],
-      imgSrc:      ["'self'", 'data:'],
+      fontSrc:     ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      imgSrc:      ["'self'", 'data:', 'blob:'],
       connectSrc:  ["'self'"],
     },
   },
 }));
 app.use(cookieParser());
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 
 // ──  Operate behind reverse proxy (nginx) ─────────────────────────────────────────────────────────────
 app.set('trust proxy', true);
@@ -64,10 +66,19 @@ app.use('/api/forgot-password', authLimiter);
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api', authRouter);
 app.use('/api/members', requireAuth, membersRouter);
+app.use('/api/admin',   requireAdmin, adminRouter);
 
-app.get('/mitglieder', requireAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'data', 'members.html'));
+// Admin draft preview — must be defined BEFORE the static /admin handler,
+// so that /admin/preview/:slug is handled by our renderer, not as a file.
+app.get('/admin/preview/:slug', requireAdmin, (req, res) => {
+  return renderPageBySlug(req, res, req.params.slug, { preview: true });
 });
+
+// Admin UI (static files, but gated by auth middleware)
+app.use('/admin', requireAdmin, express.static(path.join(__dirname, 'data', 'admin')));
+
+// Legacy static /mitglieder route is replaced by dynamic page rendering (slug=mitglieder)
+// Keep a redirect in case old links point to /mitglieder
 
 // ── Calendar: list & parse ICS files ─────────────────────────────────────────
 app.get('/api/events', (req, res) => {
@@ -102,7 +113,16 @@ app.get('/api/events', (req, res) => {
   res.json(events);
 });
 
-app.use(express.static(path.join(__dirname, 'data')));
+// Static assets (CSS, JS, images, uploads, vendor libs) — excludes HTML at root
+// so that GET / falls through to the dynamic page renderer below.
+app.use(express.static(path.join(__dirname, 'data'), {
+  index: false,            // don't auto-serve index.html for /
+  extensions: ['html'],    // allow /login → login.html
+}));
+
+// Dynamic CMS pages — MUST come after static and after all /api routes.
+// Uses optionalAuth so the renderer can show login/logout state in the nav.
+app.use(optionalAuth, pagesRouter);
 
 // ── Startup: verify DB then listen ───────────────────────────────────────────
 (async () => {

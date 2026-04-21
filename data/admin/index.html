@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Admin — Havelkanal Wassersport</title>
+<link rel="stylesheet" href="/styles.css" />
+<link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body class="admin">
+  <header class="admin-header">
+    <a class="brand" href="/admin"><strong>⚓ Admin</strong></a>
+    <nav class="admin-nav">
+      <a href="/admin#pages">Seiten</a>
+      <a href="/admin#media">Medien</a>
+      <a href="/admin#nav">Navigation</a>
+      <a href="/" target="_blank">Zur Webseite ↗</a>
+      <button class="btn" id="logout-btn" type="button">Abmelden</button>
+    </nav>
+  </header>
+
+  <main id="admin-main">
+    <div id="loading">Lade…</div>
+  </main>
+
+  <!-- Modal for media picker -->
+  <div id="media-modal" class="modal" hidden>
+    <div class="modal-body">
+      <header class="modal-head">
+        <h2>Bild wählen</h2>
+        <button class="btn" id="media-close">✕</button>
+      </header>
+      <div class="modal-content">
+        <label class="upload-box">
+          <input type="file" id="media-upload" accept="image/*" />
+          <span>📤 Neues Bild hochladen</span>
+        </label>
+        <div id="media-grid" class="media-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast for feedback -->
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="/vendor/Sortable.min.js"></script>
+  <script src="/vendor/ckeditor/ckeditor.js"></script>
+  <script src="/admin/admin.js"></script>
+</body>
+</html>

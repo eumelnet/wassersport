@@ -10,6 +10,12 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.app.replicaCount }}
   {{- end }}
+  {{- if and .Values.uploads.enabled (eq .Values.uploads.accessMode "ReadWriteOnce") }}
+  # RWO volume can only attach to one pod at a time — RollingUpdate would
+  # deadlock (new pod can't mount while old pod still holds the claim).
+  strategy:
+    type: Recreate
+  {{- end }}
   selector:
     matchLabels:
       {{- include "wassersport.selectorLabels" . | nindent 6 }}
@@ -103,6 +109,10 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            {{- if .Values.uploads.enabled }}
+            - name: uploads
+              mountPath: /app/data/uploads
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /
@@ -129,6 +139,11 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+        {{- if .Values.uploads.enabled }}
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: {{ include "wassersport.fullname" . }}-uploads
+        {{- end }}
       # Spread pods across nodes for HA
       topologySpreadConstraints:
         - maxSkew: 1

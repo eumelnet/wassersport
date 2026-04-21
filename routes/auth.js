@@ -49,7 +49,7 @@ router.post('/login', async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      'SELECT id, username, email, password_hash FROM users WHERE username = ?',
+      'SELECT id, username, email, password_hash, role FROM users WHERE username = ?',
       [username]
     );
     const user = rows[0];
@@ -59,7 +59,7 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, username: user.username, email: user.email },
+      { id: user.id, username: user.username, email: user.email, role: user.role || 'member' },
       JWT_SECRET,
       { expiresIn: '1d' }
     );
@@ -82,7 +82,7 @@ router.post('/logout', (req, res) => {
 // GET /api/me  (protected)
 const { requireAuth } = require('../middleware/auth');
 router.get('/me', requireAuth, (req, res) => {
-  return res.json({ username: req.user.username, email: req.user.email });
+  return res.json({ username: req.user.username, email: req.user.email, role: req.user.role || 'member' });
 });
 
 // POST /api/forgot-password

@@ -7,7 +7,10 @@ app:
     repository: ghcr.io/eumelnet/eumelnet/wassersport
     tag: "login"           # defaults to .Chart.AppVersion
     pullPolicy: Always
-  replicaCount: 2
+  # Uploads persist on a RWO PVC (see `uploads` section below).
+  # With RWO only one pod can mount the volume at a time — keep replicaCount: 1
+  # and autoscaling.enabled: false, OR switch uploads.accessMode to ReadWriteMany.
+  replicaCount: 1
   port: 3000
   resources:
     requests:
@@ -28,6 +31,17 @@ app:
     readOnlyRootFilesystem:   true
     capabilities:
       drop: ["ALL"]
+
+# ── Uploads (CMS media library) ───────────────────────────────────────────────
+# Backs /app/data/uploads with a PersistentVolumeClaim so images survive pod
+# restarts. RWO is the safe default; if you need multi-replica HA, provision
+# a RWX StorageClass (NFS/CephFS/EFS) and set accessMode: ReadWriteMany.
+uploads:
+  enabled: true
+  size: 5Gi
+  accessMode: ReadWriteOnce
+  # Leave empty to use the cluster default StorageClass
+  storageClass: ""
 
 # ── Database (MySQL 8) ────────────────────────────────────────────────────────
 db:
@@ -109,13 +123,17 @@ ingress:
     cert-manager.io/cluster-issuer: "letsencrypt"
 
 # ── HPA ───────────────────────────────────────────────────────────────────────
+# Must stay disabled while uploads.accessMode is ReadWriteOnce (only one pod
+# can mount the upload PVC at a time). Enable only if you switch to RWX.
 autoscaling:
-  enabled: true
-  minReplicas: 2
-  maxReplicas: 5
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 1
   targetCPUUtilizationPercentage: 70
 
 # ── Pod Disruption Budget ─────────────────────────────────────────────────────
+# With a single app replica a PDB adds no availability guarantee — disable
+# to avoid blocking node drains during maintenance.
 podDisruptionBudget:
-  enabled: true
-  minAvailable: 1
+  enabled: false
+  minAvailable: 0

@@ -1,0 +1,23 @@
+{{- if .Values.uploads.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "wassersport.fullname" . }}-uploads
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "wassersport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: uploads
+  # Survives `helm uninstall` so uploaded images aren't accidentally deleted.
+  # Remove manually with: kubectl delete pvc <name>-uploads -n <namespace>
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  accessModes:
+    - {{ .Values.uploads.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.uploads.size }}
+  {{- with .Values.uploads.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+{{- end }}
