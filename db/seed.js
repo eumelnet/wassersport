@@ -172,7 +172,62 @@ async function migrate(conn) {
   await addColumnIfMissing(conn, 'users', 'role',
     `role VARCHAR(16) NOT NULL DEFAULT 'member'`);
 
-  // pages: ensure table exists before migrating its columns
+  // CMS tables — create on existing DBs where init.sql didn't run.
+  // Definitions must match init.sql exactly.
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS pages (
+      slug              VARCHAR(64)  PRIMARY KEY,
+      title             VARCHAR(200) NOT NULL,
+      requires_auth     TINYINT(1)   NOT NULL DEFAULT 0,
+      is_listed         TINYINT(1)   NOT NULL DEFAULT 1,
+      blocks_json       JSON         NOT NULL,
+      draft_blocks_json JSON         NULL,
+      draft_title       VARCHAR(200) NULL,
+      published_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+      draft_updated_at  TIMESTAMP    NULL DEFAULT NULL,
+      updated_by        INT UNSIGNED NULL,
+      draft_updated_by  INT UNSIGNED NULL,
+      INDEX idx_published_at (published_at)
+    )
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS page_revisions (
+      id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      slug        VARCHAR(64)  NOT NULL,
+      title       VARCHAR(200) NOT NULL,
+      blocks_json JSON         NOT NULL,
+      created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+      created_by  INT UNSIGNED NULL,
+      INDEX idx_slug_created (slug, created_at)
+    )
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS media (
+      id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      filename   VARCHAR(255) NOT NULL,
+      orig_name  VARCHAR(255) NOT NULL,
+      mime       VARCHAR(100) NOT NULL,
+      width      INT NULL,
+      height     INT NULL,
+      bytes      INT UNSIGNED NULL,
+      alt        VARCHAR(255) NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      created_by INT UNSIGNED NULL,
+      INDEX idx_created_at (created_at)
+    )
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS site_settings (
+      setting_key VARCHAR(64) PRIMARY KEY,
+      value_json  JSON NOT NULL,
+      updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  // pages: add any columns missing from pre-existing installs
   if (await tableExists(conn, 'pages')) {
     await addColumnIfMissing(conn, 'pages', 'draft_blocks_json', `draft_blocks_json JSON NULL`);
     await addColumnIfMissing(conn, 'pages', 'draft_title',       `draft_title VARCHAR(200) NULL`);
