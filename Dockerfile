@@ -15,7 +15,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY . .
 
 # Drop to non-root (matches helm chart's runAsUser: 1000)
-RUN addgroup -g 1000 -S app && adduser -S -u 1000 -G app app \
+RUN addgroup -g 1001 -S app && adduser -S -u 1001 -G app app \
  && mkdir -p /app/data/uploads \
  && chown -R app:app /app
 USER app
