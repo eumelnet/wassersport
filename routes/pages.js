@@ -11,7 +11,7 @@
 const express = require('express');
 const { pool } = require('../db/connection');
 const logger   = require('../lib/logger');
-const { renderBlocks, renderLayout, pageFeatures } = require('../lib/cms-renderer');
+const { renderBlocks, renderLayout, pageFeatures, isFullHtmlPage } = require('../lib/cms-renderer');
 
 const router = express.Router();
 
@@ -56,6 +56,30 @@ async function renderPageBySlug(req, res, slug, { preview } = {}) {
   // Preview mode: use draft if available, otherwise fall back to live
   const blocks = preview && page.draft_blocks_json ? page.draft_blocks_json : page.blocks_json;
   const title  = preview && page.draft_title      ? page.draft_title      : page.title;
+
+  // ⚠️ SECURITY: full-HTML pages bypass the layout shell completely. The
+  // stored HTML is returned verbatim as the document body, including any
+  // <script>. Intended for whole-page takeover by trusted admins only.
+  // To harden: remove the isFullHtmlPage branch, or run blocks[0].data.html
+  // through sanitizeRichtext() before serving.
+  if (isFullHtmlPage(blocks)) {
+    let html = blocks[0].data && typeof blocks[0].data.html === 'string' ? blocks[0].data.html : '';
+    if (preview) {
+      const banner = `<div style="position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#ffa500;color:#000;padding:.4rem 1rem;text-align:center;font-family:sans-serif;font-weight:600;box-shadow:0 2px 4px rgba(0,0,0,.2)">
+🔍 Vorschau-Modus — Entwurf (nicht veröffentlicht) ·
+<a href="/admin#pages/${encodeURIComponent(slug)}" style="color:#000">zurück zum Editor</a> ·
+<a href="/${slug === 'home' ? '' : encodeURIComponent(slug)}" style="color:#000">Live-Version ansehen</a>
+</div>`;
+      // Try to inject banner right after <body>, fall back to prepending.
+      if (/<body[^>]*>/i.test(html)) {
+        html = html.replace(/<body[^>]*>/i, (m) => m + banner);
+      } else {
+        html = banner + html;
+      }
+    }
+    res.set('Content-Type', 'text/html; charset=utf-8');
+    return res.send(html);
+  }
 
   const settings = await getSettings();
   const feat = pageFeatures(blocks);

@@ -208,23 +208,100 @@ async function viewEditor(slug) {
   const blocksEl = h('div', { class:'blocks', id:'blocks' });
   main.appendChild(blocksEl);
 
-  CURRENT_PAGE.blocks.forEach((b, i) => blocksEl.appendChild(renderBlockEditor(b, i)));
+  // Mode helpers: a page is in "full HTML" mode when its only block is page_html.
+  function isHtmlMode() {
+    return CURRENT_PAGE.blocks.length === 1
+        && CURRENT_PAGE.blocks[0] && CURRENT_PAGE.blocks[0].type === 'page_html';
+  }
+  function switchToHtmlMode() {
+    if (CURRENT_PAGE.blocks.length > 0 && !isHtmlMode()) {
+      if (!confirm('Beim Wechsel in den HTML-Modus werden alle vorhandenen Blöcke ENTFERNT. Weiter?')) return;
+    }
+    // Seed with a minimal document template
+    const existing = isHtmlMode() ? CURRENT_PAGE.blocks[0].data.html : '';
+    CURRENT_PAGE.blocks = [{
+      type: 'page_html',
+      data: { html: existing || `<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${(document.getElementById('page-title') || {}).value || 'Neue Seite'}</title>
+</head>
+<body>
+<h1>Neue Seite</h1>
+<p>Hier steht der Inhalt.</p>
+</body>
+</html>` }
+    }];
+    viewEditor(slug);
+  }
+  function switchToBlockMode() {
+    if (isHtmlMode() && CURRENT_PAGE.blocks[0].data.html && CURRENT_PAGE.blocks[0].data.html.trim()) {
+      if (!confirm('Beim Wechsel in den Block-Modus wird der HTML-Inhalt VERWORFEN. Weiter?')) return;
+    }
+    CURRENT_PAGE.blocks = [];
+    viewEditor(slug);
+  }
 
-  // Add block bar
-  main.appendChild(renderAddBlockBar());
+  // Mode switcher bar
+  const modeBar = h('div', { class:'mode-bar',
+    style:'display:flex;gap:8px;align-items:center;margin:12px 0;padding:8px 12px;background:#f4f4f6;border-radius:6px;' },
+    h('span', { style:'font-weight:600;' }, 'Modus:'),
+    h('button', {
+      class: 'btn' + (isHtmlMode() ? '' : ' primary'),
+      onclick: switchToBlockMode,
+    }, '🧱 Blöcke'),
+    h('button', {
+      class: 'btn' + (isHtmlMode() ? ' primary' : ''),
+      onclick: switchToHtmlMode,
+    }, '📄 Ganze Seite als HTML'),
+    isHtmlMode()
+      ? h('span', { style:'color:#856404;font-size:13px;' },
+          '⚠️ Nav/Footer/Styles der Site werden in diesem Modus NICHT eingebunden — das HTML ist das komplette Dokument.')
+      : null
+  );
+  main.appendChild(modeBar);
 
-  // Sticky action bar
-  main.appendChild(renderActionBar(slug));
+  if (isHtmlMode()) {
+    // Single big textarea for the whole document
+    const warn = h('div', {
+      style:'background:#fff3cd;border:1px solid #ffc107;padding:8px 12px;border-radius:4px;margin-bottom:8px;font-size:13px;color:#856404;' },
+      h('strong', {}, '⚠️ HTML-Modus: '),
+      'Der Inhalt wird ungefiltert als komplettes HTML-Dokument ausgeliefert — inklusive ',
+      h('code', {}, '<script>'),
+      '. Nur eigenen Code oder Code aus vertrauenswürdigen Quellen einfügen.'
+    );
+    const ta = h('textarea', {
+      style:'font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;width:100%;min-height:60vh;white-space:pre;',
+      spellcheck:'false',
+      oninput: e => { CURRENT_PAGE.blocks[0].data.html = e.target.value; }
+    });
+    ta.value = CURRENT_PAGE.blocks[0].data.html || '';
+    blocksEl.appendChild(warn);
+    blocksEl.appendChild(ta);
 
-  // Make blocks sortable
-  Sortable.create(blocksEl, {
-    handle: '.block-head',
-    animation: 150,
-    onEnd: syncBlockOrder,
-  });
+    // Action bar only (no block-add, no sortable)
+    main.appendChild(renderActionBar(slug));
+  } else {
+    CURRENT_PAGE.blocks.forEach((b, i) => blocksEl.appendChild(renderBlockEditor(b, i)));
 
-  // Mount CKEditor instances
-  mountCKEditors();
+    // Add block bar
+    main.appendChild(renderAddBlockBar());
+
+    // Sticky action bar
+    main.appendChild(renderActionBar(slug));
+
+    // Make blocks sortable
+    Sortable.create(blocksEl, {
+      handle: '.block-head',
+      animation: 150,
+      onEnd: syncBlockOrder,
+    });
+
+    // Mount CKEditor instances
+    mountCKEditors();
+  }
 }
 
 function renderStatusBar() {
@@ -285,6 +362,8 @@ function renderAddBlockBar() {
   );
   const btns = h('div', { class:'block-type-buttons' });
   for (const bt of BLOCK_TYPES) {
+    // page_html is a page-level mode, not a block — switch via mode bar instead.
+    if (bt.type === 'page_html') continue;
     btns.appendChild(h('button', {
       class:'block-type-btn',
       onclick: () => addBlock(bt.type),
