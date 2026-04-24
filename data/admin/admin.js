@@ -160,6 +160,25 @@ async function viewEditor(slug) {
     };
   }
 
+  renderEditorBody(slug);
+}
+
+// Re-render the editor UI from the current CURRENT_PAGE state without
+// re-fetching from the server. Used by the mode switcher and anywhere
+// else that mutates CURRENT_PAGE.blocks in place.
+function renderEditorBody(slug) {
+  // Capture latest form values before rebuilding DOM, so meta edits
+  // aren't lost when the user toggles modes.
+  const titleEl = document.getElementById('page-title');
+  const slugEl  = document.getElementById('page-slug');
+  const authEl  = document.getElementById('page-requires-auth');
+  const listEl  = document.getElementById('page-is-listed');
+  if (titleEl) CURRENT_PAGE.title = titleEl.value;
+  if (slugEl)  CURRENT_PAGE.slug  = slugEl.value;
+  if (authEl)  CURRENT_PAGE.requires_auth = authEl.checked;
+  if (listEl)  CURRENT_PAGE.is_listed     = listEl.checked;
+
+  destroyEditors();
   main.innerHTML = '';
 
   // Toolbar
@@ -206,7 +225,6 @@ async function viewEditor(slug) {
 
   // Blocks container
   const blocksEl = h('div', { class:'blocks', id:'blocks' });
-  main.appendChild(blocksEl);
 
   // Mode helpers: a page is in "full HTML" mode when its only block is page_html.
   function isHtmlMode() {
@@ -214,34 +232,35 @@ async function viewEditor(slug) {
         && CURRENT_PAGE.blocks[0] && CURRENT_PAGE.blocks[0].type === 'page_html';
   }
   function switchToHtmlMode() {
-    if (CURRENT_PAGE.blocks.length > 0 && !isHtmlMode()) {
+    if (isHtmlMode()) return;
+    if (CURRENT_PAGE.blocks.length > 0) {
       if (!confirm('Beim Wechsel in den HTML-Modus werden alle vorhandenen Blöcke ENTFERNT. Weiter?')) return;
     }
-    // Seed with a minimal document template
-    const existing = isHtmlMode() ? CURRENT_PAGE.blocks[0].data.html : '';
+    const titleVal = (document.getElementById('page-title') || {}).value || CURRENT_PAGE.title || 'Neue Seite';
     CURRENT_PAGE.blocks = [{
       type: 'page_html',
-      data: { html: existing || `<!doctype html>
+      data: { html: `<!doctype html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${(document.getElementById('page-title') || {}).value || 'Neue Seite'}</title>
+<title>${titleVal}</title>
 </head>
 <body>
-<h1>Neue Seite</h1>
+<h1>${titleVal}</h1>
 <p>Hier steht der Inhalt.</p>
 </body>
 </html>` }
     }];
-    viewEditor(slug);
+    renderEditorBody(slug);
   }
   function switchToBlockMode() {
-    if (isHtmlMode() && CURRENT_PAGE.blocks[0].data.html && CURRENT_PAGE.blocks[0].data.html.trim()) {
+    if (!isHtmlMode()) return;
+    if (CURRENT_PAGE.blocks[0].data.html && CURRENT_PAGE.blocks[0].data.html.trim()) {
       if (!confirm('Beim Wechsel in den Block-Modus wird der HTML-Inhalt VERWORFEN. Weiter?')) return;
     }
     CURRENT_PAGE.blocks = [];
-    viewEditor(slug);
+    renderEditorBody(slug);
   }
 
   // Mode switcher bar
@@ -262,6 +281,7 @@ async function viewEditor(slug) {
       : null
   );
   main.appendChild(modeBar);
+  main.appendChild(blocksEl);
 
   if (isHtmlMode()) {
     // Single big textarea for the whole document
