@@ -399,6 +399,27 @@ function renderField(block, field, blockIdx) {
       fieldEl.appendChild(ta);
       break;
     }
+    // ⚠️ SECURITY: 'code' fields store HTML verbatim, including <script>.
+    // See lib/sanitizer.js for how to lock this down.
+    case 'code': {
+      const warn = h('div', { class:'code-warning',
+        style:'background:#fff3cd;border:1px solid #ffc107;padding:8px 12px;border-radius:4px;margin-bottom:8px;font-size:13px;color:#856404;' },
+        h('strong', {}, '⚠️ Achtung: '),
+        'Der Inhalt wird ungefiltert ausgeliefert — inklusive ',
+        h('code', {}, '<script>'),
+        '. Nur eigenen Code oder Code aus vertrauenswürdigen Quellen einfügen. ',
+        'XSS-Risiko bei Copy/Paste von fremden Seiten.'
+      );
+      const ta = h('textarea', {
+        style:'font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;min-height:240px;white-space:pre;',
+        spellcheck:'false',
+        oninput: e => { block.data[field.key] = e.target.value; }
+      });
+      ta.value = val || '';
+      fieldEl.appendChild(warn);
+      fieldEl.appendChild(ta);
+      break;
+    }
     case 'image': {
       fieldEl.appendChild(renderImagePicker(block, field.key));
       break;
