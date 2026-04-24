@@ -121,6 +121,10 @@ ingress:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     cert-manager.io/cluster-issuer: "letsencrypt"
+    # Must be >= the multer limit in routes/admin.js (10 MB). Without this,
+    # ingress-nginx enforces its 1 MiB default and rejects image uploads with
+    # an HTML 413 page before the request reaches the app.
+    nginx.ingress.kubernetes.io/proxy-body-size: "12m"
 
 # ── HPA ───────────────────────────────────────────────────────────────────────
 # Must stay disabled while uploads.accessMode is ReadWriteOnce (only one pod

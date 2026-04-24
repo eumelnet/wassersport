@@ -935,8 +935,17 @@ async function uploadMedia(file) {
   fd.append('file', file);
   try {
     const r = await fetch('/api/admin/media', { method:'POST', body: fd, credentials:'same-origin' });
-    const j = await r.json();
-    if (!r.ok || !j.ok) throw new Error(j.error || 'Upload fehlgeschlagen.');
+    // Response may not be JSON (e.g. 413 from reverse proxy, HTML error page).
+    // Read as text first, then attempt JSON parse so the user sees the real reason.
+    const raw = await r.text();
+    let j = null;
+    try { j = raw ? JSON.parse(raw) : null; } catch (_) { /* non-JSON response */ }
+    if (!r.ok || !j || !j.ok) {
+      const msg = (j && j.error)
+        || `HTTP ${r.status} ${r.statusText || ''}`.trim()
+        || (raw ? raw.slice(0, 200) : 'Unbekannter Fehler');
+      throw new Error(msg);
+    }
     toast('Hochgeladen.');
     return j.media;
   } catch (err) {
