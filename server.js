@@ -132,7 +132,47 @@ app.use(optionalAuth, pagesRouter);
   } catch (err) {
     logger.warn({ err }, 'db: connection failed at startup — continuing without DB (calendar still works)');
   }
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     logger.info({ port: PORT, logLevel: logger.level }, 'server started');
   });
+
+  // Track open connections so we can close them on shutdown (otherwise
+  // keep-alive sockets keep server.close() pending until client disconnects).
+  const connections = new Set();
+  server.on('connection', (conn) => {
+    connections.add(conn);
+    conn.on('close', () => connections.delete(conn));
+  });
+
+  let shuttingDown = false;
+  const shutdown = (signal) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    logger.info({ signal }, 'shutdown: received signal, closing server');
+
+    // Stop accepting new connections
+    server.close((err) => {
+      if (err) {
+        logger.error({ err }, 'shutdown: server.close error');
+        process.exit(1);
+      }
+      logger.info('shutdown: server closed, exiting');
+      process.exit(0);
+    });
+
+    // Actively close idle keep-alive connections so server.close() can resolve
+    for (const conn of connections) conn.end();
+    setTimeout(() => {
+      for (const conn of connections) conn.destroy();
+    }, 5000).unref();
+
+    // Hard fallback in case something hangs
+    setTimeout(() => {
+      logger.error('shutdown: forced exit after 10s');
+      process.exit(1);
+    }, 10000).unref();
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 })();

@@ -1,0 +1,55 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Dependencies (installed fresh inside the image via `npm ci`)
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build / editor / OS artefacts
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Docs & project meta – not needed at runtime
+README*
+CHANGELOG*
+LICENSE*
+*.md
+docs/
+
+# CI / tooling
+.github
+.gitlab-ci.yml
+.editorconfig
+.eslintrc*
+.prettierrc*
+.env
+.env.*
+!.env.example
+
+# Local runtime data – must NOT be baked into the image.
+# Uploaded files live in a mounted PVC in k8s; keep the folder structure
+# but not its contents.
+data/uploads/*
+!data/uploads/.gitkeep
+
+# Test / coverage output
+coverage
+.nyc_output
+test
+tests
+*.test.js
+
+# Docker / k8s meta – not needed inside the image itself
+Dockerfile
+.dockerignore
+helm
+k8s
+kubernetes
