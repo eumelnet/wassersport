@@ -223,6 +223,13 @@ a:hover { text-decoration: underline; }
 }
 
 /* ── CMS images ────────────────────────────────────────────────────────── */
+.cms-image,
+.cms-gallery {
+  max-width: 1200px;
+  margin: 24px auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
 .cms-image img,
 .cms-gallery img,
 .boats-grid .card img {
@@ -284,3 +291,60 @@ a:hover { text-decoration: underline; }
   font-family: inherit;
 }
 .lightbox-close:hover { background: rgba(255, 255, 255, .3); }
+
+.lightbox-prev,
+.lightbox-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, .15);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 40px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox-prev { left: 16px; }
+.lightbox-next { right: 16px; }
+.lightbox-prev:hover,
+.lightbox-next:hover { background: rgba(255, 255, 255, .3); }
+
+.lightbox-counter {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 14px;
+  background: rgba(0, 0, 0, .4);
+  padding: 4px 12px;
+  border-radius: 12px;
+  pointer-events: none;
+}
+.lightbox-caption {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 80vw;
+  color: #fff;
+  background: rgba(0, 0, 0, .5);
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .lightbox-prev, .lightbox-next { width: 44px; height: 44px; font-size: 32px; }
+  .lightbox-prev { left: 6px; }
+  .lightbox-next { right: 6px; }
+}
