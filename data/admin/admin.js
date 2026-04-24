@@ -416,7 +416,12 @@ function defaultDataFor(type) {
     case 'events':   return { headline:'Veranstaltungskalender', subheadline:'Alle Termine auf einen Blick.' };
     case 'cta':      return { headline:'', text:'', button:{label:'',href:''} };
     case 'banner':   return { label:'Ankündigung:', source:'captain', text:'' };
-    case 'members_table': return {};
+    case 'members_table': return {
+      intro_html: '',
+      outro_html: '',
+      columns: MEMBERS_DEFAULT_COLS.map(c => ({ ...c })),
+      sort: 'none',
+    };
     default:         return {};
   }
 }
@@ -544,6 +549,10 @@ function renderField(block, field, blockIdx) {
       fieldEl.appendChild(renderBoatItems(block, field.key));
       break;
     }
+    case 'members_columns': {
+      fieldEl.appendChild(renderMembersColumns(block, field.key));
+      break;
+    }
     default:
       fieldEl.appendChild(h('em', {}, `Unbekannter Feldtyp: ${field.type}`));
   }
@@ -651,6 +660,79 @@ function renderBoatItems(block, key) {
       }
     }, '+ Kachel hinzufügen'));
   }
+  refresh();
+  return container;
+}
+
+// Editor for the members_table "columns" field.
+// Shows three rows (name/sport/since) with a checkbox (visible) + label input
+// + up/down buttons to control order. Normalises missing/extra entries on the
+// fly so rows are always in a valid state.
+const MEMBERS_DEFAULT_COLS = [
+  { key: 'name',  label: 'Name',          visible: true },
+  { key: 'sport', label: 'Sport',         visible: true },
+  { key: 'since', label: 'Mitglied seit', visible: true },
+];
+function renderMembersColumns(block, key) {
+  const container = h('div', { class:'members-columns' });
+  // Normalise current value
+  const current = Array.isArray(block.data[key]) ? block.data[key].slice() : [];
+  const seen = new Set(current.map(c => c && c.key).filter(Boolean));
+  for (const d of MEMBERS_DEFAULT_COLS) {
+    if (!seen.has(d.key)) current.push({ ...d, visible: current.length === 0 });
+  }
+  // Filter stray keys (anything not in defaults)
+  const validKeys = new Set(MEMBERS_DEFAULT_COLS.map(c => c.key));
+  block.data[key] = current.filter(c => c && validKeys.has(c.key));
+
+  function move(i, delta) {
+    const arr = block.data[key];
+    const j = i + delta;
+    if (j < 0 || j >= arr.length) return;
+    arr.splice(j, 0, arr.splice(i, 1)[0]);
+    refresh();
+  }
+
+  function refresh() {
+    container.innerHTML = '';
+    const arr = block.data[key];
+    const visibleCount = arr.filter(c => c.visible).length;
+    arr.forEach((col, i) => {
+      const defaultLabel = (MEMBERS_DEFAULT_COLS.find(d => d.key === col.key) || {}).label || col.key;
+      const row = h('div', { class:'members-column-row',
+        style:'display:flex;gap:8px;align-items:center;padding:6px;border:1px solid #e0e0e0;border-radius:4px;margin-bottom:4px;background:#fafafa;' },
+        h('input', {
+          type:'checkbox', checked: col.visible !== false,
+          onchange: e => {
+            // Forbid disabling the last visible column
+            if (!e.target.checked && visibleCount <= 1) {
+              e.target.checked = true;
+              toast('Mindestens eine Spalte muss sichtbar bleiben.', true);
+              return;
+            }
+            col.visible = e.target.checked;
+            refresh();
+          }
+        }),
+        h('span', { style:'font-family:monospace;font-size:12px;color:#666;min-width:60px;' }, col.key),
+        h('input', {
+          type:'text', value: col.label || defaultLabel,
+          placeholder: defaultLabel, style:'flex:1;',
+          oninput: e => { col.label = e.target.value; }
+        }),
+        h('button', { class:'btn tiny', disabled: i === 0,
+          onclick: () => move(i, -1) }, '↑'),
+        h('button', { class:'btn tiny', disabled: i === arr.length - 1,
+          onclick: () => move(i, +1) }, '↓')
+      );
+      container.appendChild(row);
+    });
+    container.appendChild(h('p', {
+      style:'font-size:12px;color:#666;margin-top:6px;' },
+      'Reihenfolge = Anzeigereihenfolge in der Tabelle. Haken setzen/entfernen zum Ein-/Ausblenden.'
+    ));
+  }
+
   refresh();
   return container;
 }
