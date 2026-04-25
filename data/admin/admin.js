@@ -416,6 +416,7 @@ function defaultDataFor(type) {
     case 'events':   return { headline:'Veranstaltungskalender', subheadline:'Alle Termine auf einen Blick.' };
     case 'cta':      return { headline:'', text:'', button:{label:'',href:''} };
     case 'banner':   return { label:'Ankündigung:', source:'captain', text:'' };
+    case 'livestream': return { url:'', title:'', description:'', poster_url:'', autoplay_muted:false };
     case 'members_table': return {
       intro_html: '',
       outro_html: '',
@@ -551,6 +552,24 @@ function renderField(block, field, blockIdx) {
     }
     case 'members_columns': {
       fieldEl.appendChild(renderMembersColumns(block, field.key));
+      break;
+    }
+    case 'checkbox': {
+      const cb = h('input', {
+        type:'checkbox',
+        checked: !!val,
+        onchange: e => { block.data[field.key] = e.target.checked; }
+      });
+      // Wrap so the label sits to the right and the whole row is clickable.
+      const wrap = h('label', { style:'display:inline-flex;align-items:center;gap:8px;cursor:pointer;' },
+        cb,
+        h('span', {}, field.label || field.key)
+      );
+      // The outer fieldEl already prints field.label as a heading; for
+      // checkboxes we hide that heading because the inline label is clearer.
+      const heading = fieldEl.querySelector(':scope > label, :scope > .field-label');
+      if (heading) heading.style.display = 'none';
+      fieldEl.appendChild(wrap);
       break;
     }
     default:

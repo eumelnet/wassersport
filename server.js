@@ -41,8 +41,13 @@ app.use(helmet({
       scriptSrc:   ["'self'", "'unsafe-inline'", 'https://cdn.skypack.dev', 'https://fonts.googleapis.com'],
       styleSrc:    ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc:     ["'self'", 'https://fonts.gstatic.com', 'data:'],
-      imgSrc:      ["'self'", 'data:', 'blob:'],
-      connectSrc:  ["'self'"],
+      imgSrc:      ["'self'", 'data:', 'blob:', 'https:'],
+      // Livestream blocks (HLS) need to fetch .m3u8/.ts segments from the
+      // stream server. Allowing https: keeps editors free to use any
+      // streaming host without a server change. mediaSrc covers <video src>,
+      // connectSrc covers hls.js's XHR/fetch for segments.
+      mediaSrc:    ["'self'", 'https:', 'blob:'],
+      connectSrc:  ["'self'", 'https:'],
       frameSrc:    ["'self'", 'https://www.youtube-nocookie.com', 'https://www.youtube.com'],
     },
   },
