@@ -1164,6 +1164,7 @@ async function viewNav() {
   main.appendChild(h('div', { class:'toolbar' }, h('h1', {}, 'Navigation & Branding')));
 
   const { settings } = await api('/api/admin/settings');
+  const { fonts: themeFonts, defaults: themeDefaults } = await api('/api/admin/theme-options');
   const nav        = settings.nav        || [];
   const footerNav  = settings.footer_nav || [];
   const branding   = settings.branding   || {};
@@ -1175,10 +1176,40 @@ async function viewNav() {
       h('input', { type:'text', id:'b-site-name', value: branding.site_name || '' })),
     h('label', {}, 'Logo-URL',
       h('input', { type:'text', id:'b-logo-url', value: branding.logo_url || '/logo.png' })),
+    h('label', {}, 'Favicon-URL',
+      h('input', { type:'text', id:'b-favicon-url', value: branding.favicon_url || '' })),
     h('label', {}, 'Footer-Text',
       h('input', { type:'text', id:'b-footer-note', value: branding.footer_note || '' }))
   );
   main.appendChild(brandBox);
+
+  // Theme form (colors + font)
+  const themeBox = h('div', { class:'editor-meta' },
+    h('h2', { style:'margin:0;font-size:1rem' }, 'Farben & Schrift')
+  );
+  // Color pickers — each gets a <input type="color"> + text input side-by-side
+  function colorRow(label, id, fallback) {
+    const val = branding[id] || fallback;
+    const colorInp = h('input', { type:'color', value: val, style:'width:48px;height:36px;padding:2px;border:1px solid #ccc;border-radius:4px;cursor:pointer;' });
+    const textInp  = h('input', { type:'text', id: 'b-' + id, value: val, style:'flex:1;' });
+    colorInp.addEventListener('input', () => { textInp.value = colorInp.value; });
+    textInp.addEventListener('input', () => { if (/^#[0-9a-f]{6}$/i.test(textInp.value)) colorInp.value = textInp.value; });
+    return h('label', {}, label,
+      h('div', { style:'display:flex;gap:8px;align-items:center;' }, colorInp, textInp));
+  }
+  themeBox.appendChild(colorRow('Hauptfarbe', 'color_primary', themeDefaults.color_primary));
+  themeBox.appendChild(colorRow('Hauptfarbe Schrift', 'color_primary_ink', themeDefaults.color_primary_ink));
+  themeBox.appendChild(colorRow('Akzentfarbe', 'color_accent', themeDefaults.color_accent));
+
+  // Font picker
+  const fontSelect = h('select', { id:'b-font-family' });
+  (themeFonts || []).forEach(f => {
+    const opt = h('option', { value: f }, f);
+    if (f === (branding.font_family || themeDefaults.font_family)) opt.selected = true;
+    fontSelect.appendChild(opt);
+  });
+  themeBox.appendChild(h('label', {}, 'Schriftart', fontSelect));
+  main.appendChild(themeBox);
 
   // Header nav
   const navBox = h('div', { class:'editor-meta' },
@@ -1232,9 +1263,14 @@ async function saveNavSettings() {
   const nav        = collectNavList('nav-list');
   const footer_nav = collectNavList('foot-list');
   const branding   = {
-    site_name:   document.getElementById('b-site-name').value.trim(),
-    logo_url:    document.getElementById('b-logo-url').value.trim(),
-    footer_note: document.getElementById('b-footer-note').value.trim(),
+    site_name:       document.getElementById('b-site-name').value.trim(),
+    logo_url:        document.getElementById('b-logo-url').value.trim(),
+    favicon_url:     document.getElementById('b-favicon-url').value.trim(),
+    footer_note:     document.getElementById('b-footer-note').value.trim(),
+    color_primary:     document.getElementById('b-color_primary').value.trim(),
+    color_primary_ink: document.getElementById('b-color_primary_ink').value.trim(),
+    color_accent:      document.getElementById('b-color_accent').value.trim(),
+    font_family:       document.getElementById('b-font-family').value,
   };
   try {
     await api('/api/admin/settings/nav',        { method:'PUT', body: JSON.stringify({ value: nav }) });

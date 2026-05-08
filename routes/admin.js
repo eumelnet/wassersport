@@ -13,7 +13,7 @@ const sharp   = require('sharp');
 const { pool }           = require('../db/connection');
 const logger             = require('../lib/logger');
 const { sanitizeBlocks } = require('../lib/sanitizer');
-const { BLOCK_TYPES }    = require('../lib/cms-renderer');
+const { BLOCK_TYPES, THEME_FONTS, THEME_DEFAULTS } = require('../lib/cms-renderer');
 const { invalidateSettingsCache } = require('./pages');
 
 const router = express.Router();
@@ -472,6 +472,11 @@ router.put('/settings/:key', async (req, res) => {
 // Expose block-type registry to the admin UI
 router.get('/block-types', (req, res) => {
   res.json({ ok: true, types: BLOCK_TYPES });
+});
+
+// Expose theme options (font list + defaults) to the admin UI
+router.get('/theme-options', (req, res) => {
+  res.json({ ok: true, fonts: Object.keys(THEME_FONTS), defaults: THEME_DEFAULTS });
 });
 
 module.exports = router;
