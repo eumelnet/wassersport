@@ -252,6 +252,36 @@ async function migrate(conn) {
     await addColumnIfMissing(conn, 'pages', 'updated_by',        `updated_by INT UNSIGNED NULL`);
     await addColumnIfMissing(conn, 'pages', 'draft_updated_by',  `draft_updated_by INT UNSIGNED NULL`);
   }
+
+  // ── Example tables for form builder demos ──────────────────────────────────
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS boat_berths (
+      id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      berth_nr    VARCHAR(10) NOT NULL COMMENT 'Liegeplatz-Nummer (z.B. A-12)',
+      boat_name   VARCHAR(100) DEFAULT NULL COMMENT 'Name des Bootes',
+      boat_type   VARCHAR(60) DEFAULT NULL COMMENT 'Typ (Segelboot, Motorboot, Kanu, …)',
+      owner_name  VARCHAR(100) NOT NULL COMMENT 'Eigentümer / Mitglied',
+      length_m    DECIMAL(4,1) DEFAULT NULL COMMENT 'Bootslänge in Metern',
+      start_date  DATE DEFAULT NULL COMMENT 'Belegung ab',
+      end_date    DATE DEFAULT NULL COMMENT 'Belegung bis (leer = unbefristet)',
+      notes       TEXT COMMENT 'Anmerkungen',
+      updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS member_fees (
+      id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      member_name VARCHAR(100) NOT NULL COMMENT 'Mitgliedsname',
+      fee_year    YEAR NOT NULL COMMENT 'Beitragsjahr',
+      amount      DECIMAL(8,2) NOT NULL COMMENT 'Betrag in EUR',
+      due_date    DATE DEFAULT NULL COMMENT 'Fälligkeitsdatum',
+      paid_date   DATE DEFAULT NULL COMMENT 'Bezahlt am (leer = offen)',
+      status      ENUM('offen','bezahlt','gemahnt') NOT NULL DEFAULT 'offen',
+      notes       TEXT COMMENT 'Anmerkungen',
+      updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -313,6 +343,87 @@ async function upsertSetting(conn, key, value) {
     await upsertPage(conn, { slug: 'mitglieder', title: 'Mitgliederbereich',                            requires_auth: true,  is_listed: true,  blocks: MEMBERS_BLOCKS });
     await upsertPage(conn, { slug: 'impressum',  title: 'Impressum',                                    requires_auth: false, is_listed: false, blocks: IMPRESSUM_BLOCKS });
     logger.info('seed: pages ready — home, mitglieder, impressum');
+
+    // ── Form templates + demo data ────────────────────────────────────────────
+    // Boat berths form
+    await conn.query(
+      `INSERT INTO form_templates (slug, title, description, table_name, fields_json, access_level)
+       VALUES (?, ?, ?, ?, CAST(? AS JSON), ?)
+       ON DUPLICATE KEY UPDATE
+         title = VALUES(title), description = VALUES(description),
+         table_name = VALUES(table_name), fields_json = VALUES(fields_json),
+         access_level = VALUES(access_level)`,
+      [
+        'bootsplaetze',
+        'Bootsplatzbelegung',
+        'Übersicht aller Liegeplätze und deren Belegung.',
+        'boat_berths',
+        JSON.stringify([
+          { key: 'berth_nr',   label: 'Liegeplatz-Nr.', type: 'text',   required: true },
+          { key: 'boat_name',  label: 'Bootsname',      type: 'text',   required: false },
+          { key: 'boat_type',  label: 'Bootstyp',       type: 'text',   required: false },
+          { key: 'owner_name', label: 'Eigentümer',     type: 'text',   required: true },
+          { key: 'length_m',   label: 'Länge (m)',       type: 'number', required: false },
+          { key: 'start_date', label: 'Belegt ab',       type: 'date',   required: false },
+          { key: 'end_date',   label: 'Belegt bis',      type: 'date',   required: false },
+          { key: 'notes',      label: 'Anmerkungen',    type: 'textarea', required: false },
+        ]),
+        'member',
+      ]
+    );
+
+    // Member fees form
+    await conn.query(
+      `INSERT INTO form_templates (slug, title, description, table_name, fields_json, access_level)
+       VALUES (?, ?, ?, ?, CAST(? AS JSON), ?)
+       ON DUPLICATE KEY UPDATE
+         title = VALUES(title), description = VALUES(description),
+         table_name = VALUES(table_name), fields_json = VALUES(fields_json),
+         access_level = VALUES(access_level)`,
+      [
+        'mitgliedsbeitraege',
+        'Mitgliedsbeiträge',
+        'Beitragsübersicht: Wer hat bezahlt, wer ist noch offen?',
+        'member_fees',
+        JSON.stringify([
+          { key: 'member_name', label: 'Mitglied',        type: 'text',   required: true },
+          { key: 'fee_year',    label: 'Beitragsjahr',    type: 'number', required: true },
+          { key: 'amount',      label: 'Betrag (€)',      type: 'number', required: true },
+          { key: 'due_date',    label: 'Fällig am',        type: 'date',   required: false },
+          { key: 'paid_date',   label: 'Bezahlt am',       type: 'date',   required: false },
+          { key: 'status',      label: 'Status',          type: 'text',   required: true },
+          { key: 'notes',       label: 'Anmerkungen',    type: 'textarea', required: false },
+        ]),
+        'webadmin',
+      ]
+    );
+
+    // Demo data: boat berths
+    const [[{ berthCount }]] = await conn.query('SELECT COUNT(*) AS berthCount FROM boat_berths');
+    if (berthCount === 0) {
+      await conn.query(`INSERT INTO boat_berths (berth_nr, boat_name, boat_type, owner_name, length_m, start_date) VALUES
+        ('A-01', 'Sturmvogel',   'Segelboot',  'Max Mustermann',    8.5, '2025-04-01'),
+        ('A-02', 'Wellentänzer', 'Motorboot',   'Erika Musterfrau',  6.2, '2025-04-01'),
+        ('A-03', NULL,           NULL,           '— frei —',         NULL, NULL),
+        ('B-01', 'Libelle',      'Kanu',        'Hans Meier',        4.0, '2025-05-15'),
+        ('B-02', 'Hafenperle',   'Segelboot',   'Anna Schmidt',      9.1, '2025-03-01'),
+        ('B-03', 'Donnerwind',   'Motorboot',   'Peter Lustig',      7.3, '2025-06-01')
+      `);
+    }
+
+    // Demo data: member fees
+    const [[{ feeCount }]] = await conn.query('SELECT COUNT(*) AS feeCount FROM member_fees');
+    if (feeCount === 0) {
+      await conn.query(`INSERT INTO member_fees (member_name, fee_year, amount, due_date, paid_date, status) VALUES
+        ('Max Mustermann',   2025, 180.00, '2025-01-15', '2025-01-10', 'bezahlt'),
+        ('Erika Musterfrau', 2025, 180.00, '2025-01-15', '2025-02-03', 'bezahlt'),
+        ('Hans Meier',       2025, 180.00, '2025-01-15', NULL,         'offen'),
+        ('Anna Schmidt',     2025, 180.00, '2025-01-15', NULL,         'gemahnt'),
+        ('Peter Lustig',     2025, 120.00, '2025-01-15', '2025-01-14', 'bezahlt')
+      `);
+    }
+
+    logger.info('seed: form templates + demo data ready (bootsplaetze, mitgliedsbeitraege)');
   } finally {
     conn.release();
     await pool.end();
