@@ -391,3 +391,28 @@ a:hover { text-decoration: underline; }
   color: #b00;
   border-radius: 6px;
 }
+
+/* ── Embedded forms ───────────────────────────────────────────────── */
+.cms-form-embed {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 24px;
+}
+.cms-form-title { margin: 0 0 .5rem; font-size: 1.25rem; }
+.cms-form-desc  { margin: 0 0 1rem; color: #555; font-size: .95rem; }
+.cms-form-loading { color: var(--muted); }
+.cms-form-error { color: #b00; }
+.cms-form-table { border-radius: 6px; overflow: hidden; }
+.cms-form-table th { background: var(--green); color: #fff; }
+.cms-form-add {
+  background: #f8f9fa;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 16px;
+}
+.cms-form-embed--invalid {
+  padding: 1rem;
+  border: 1px dashed #c33;
+  color: #b00;
+  border-radius: 6px;
+}

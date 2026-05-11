@@ -18,6 +18,11 @@ const { invalidateSettingsCache } = require('./pages');
 
 const router = express.Router();
 
+// ── Current user info (role) for the admin SPA ───────────────────────────────
+router.get('/me', (req, res) => {
+  res.json({ ok: true, user: { id: req.user.id, username: req.user.username, role: req.user.role } });
+});
+
 // ── Upload handling ──────────────────────────────────────────────────────────
 const UPLOADS_DIR = path.join(__dirname, '..', 'data', 'uploads');
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });

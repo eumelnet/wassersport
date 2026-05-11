@@ -13,6 +13,11 @@
 let BLOCK_TYPES = [];      // loaded from /api/admin/block-types
 let ACTIVE_EDITORS = [];   // CKEditor instances to destroy on view change
 let CURRENT_PAGE = null;   // { slug, title, requires_auth, is_listed, blocks }
+let CURRENT_USER = null;   // { id, username, role }
+
+// Role hierarchy — mirrors middleware/auth.js
+const ROLE_LEVEL = { public:0, member:1, webadmin:2, dbadmin:3, admin:4 };
+function hasRole(minRole) { return CURRENT_USER && (ROLE_LEVEL[CURRENT_USER.role]||0) >= (ROLE_LEVEL[minRole]||0); }
 
 const main = document.getElementById('admin-main');
 
@@ -73,6 +78,8 @@ async function route() {
     else if (view === 'pages' && rest[0])                 await viewEditor(rest[0]);
     else if (view === 'media')                            await viewMedia();
     else if (view === 'nav')                              await viewNav();
+    else if (view === 'db' && hasRole('dbadmin'))         await viewDb(rest);
+    else if (view === 'forms' && hasRole('dbadmin'))      await viewForms(rest);
     else                                                  await viewPages();
   } catch (err) {
     main.innerHTML = '';
@@ -88,8 +95,24 @@ window.addEventListener('hashchange', route);
     window.location.href = '/';
   });
   try {
+    const me = await api('/api/admin/me');
+    CURRENT_USER = me.user;
     const bt = await api('/api/admin/block-types');
     BLOCK_TYPES = bt.types;
+    // Dynamically show DB/Forms nav links for dbadmin+
+    if (hasRole('dbadmin')) {
+      const adminNav = document.querySelector('.admin-nav');
+      const ref = adminNav.querySelector('a[href="/admin#nav"]');
+      const dbLink = h('a', { href:'/admin#forms' }, 'Formulare');
+      const tblLink = h('a', { href:'/admin#db' }, 'Datenbank');
+      if (ref && ref.nextSibling) {
+        adminNav.insertBefore(dbLink, ref.nextSibling);
+        adminNav.insertBefore(tblLink, dbLink.nextSibling);
+      } else {
+        adminNav.appendChild(dbLink);
+        adminNav.appendChild(tblLink);
+      }
+    }
   } catch (err) {
     main.innerHTML = 'Keine Admin-Rechte oder nicht eingeloggt. <a href="/login.html">Anmelden</a>';
     return;
@@ -417,6 +440,7 @@ function defaultDataFor(type) {
     case 'cta':      return { headline:'', text:'', button:{label:'',href:''} };
     case 'banner':   return { label:'Ankündigung:', source:'captain', text:'' };
     case 'livestream': return { url:'', title:'', description:'', poster_url:'', autoplay_muted:false };
+    case 'form_embed': return { form_slug:'', title:'' };
     case 'members_table': return {
       intro_html: '',
       outro_html: '',
@@ -1280,6 +1304,359 @@ async function saveNavSettings() {
   } catch(err) {
     toast('Fehler: ' + err.message, true);
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DB-Explorer (dbadmin+)
+// ══════════════════════════════════════════════════════════════════════════════
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+async function viewDb(rest) {
+  main.innerHTML = '';
+  main.appendChild(h('div', { class:'toolbar' }, h('h1', {}, 'Datenbank-Explorer')));
+
+  if (rest && rest[0]) {
+    await viewDbTable(rest[0]);
+    return;
+  }
+
+  // List tables
+  const { tables } = await api('/api/dbadmin/tables');
+  const list = h('div', { class:'page-list' });
+  tables.forEach(t => {
+    list.appendChild(h('a', { href:'#db/' + t, class:'page-row' },
+      h('strong', {}, t)
+    ));
+  });
+  main.appendChild(list);
+}
+
+async function viewDbTable(tableName) {
+  const limit = 50;
+  let offset = 0;
+  let searchTerm = '';
+
+  async function load() {
+    const qs = `limit=${limit}&offset=${offset}` + (searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : '');
+    return await api(`/api/dbadmin/tables/${encodeURIComponent(tableName)}/rows?${qs}`);
+  }
+
+  async function render() {
+    main.innerHTML = '';
+    main.appendChild(h('div', { class:'toolbar' },
+      h('h1', {}, tableName),
+      h('a', { href:'#db', class:'btn' }, '← Zurück')
+    ));
+
+    // Search
+    const searchInp = h('input', { type:'text', placeholder:'Suche…', value: searchTerm, style:'margin:0 0 12px;max-width:300px;' });
+    searchInp.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') { searchTerm = searchInp.value.trim(); offset = 0; await render(); }
+    });
+    main.appendChild(searchInp);
+
+    const data = await load();
+    const { pk, columns, rows, total } = data;
+
+    // Table
+    const table = h('table', { class:'db-table', style:'width:100%;border-collapse:collapse;font-size:13px;overflow-x:auto;display:block;' });
+    const thead = h('thead', {});
+    const headRow = h('tr', {});
+    columns.forEach(c => headRow.appendChild(h('th', { style:'padding:6px 8px;border-bottom:2px solid var(--line);text-align:left;white-space:nowrap;' }, c.Field)));
+    headRow.appendChild(h('th', { style:'padding:6px 8px;border-bottom:2px solid var(--line);' }, 'Aktionen'));
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = h('tbody', {});
+    rows.forEach(row => {
+      const tr = h('tr', {});
+      columns.forEach(c => {
+        const val = row[c.Field];
+        const display = val === null ? '∅' : String(val).length > 80 ? String(val).slice(0, 80) + '…' : String(val);
+        tr.appendChild(h('td', { style:'padding:6px 8px;border-bottom:1px solid var(--line);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' }, display));
+      });
+      // Actions
+      const actionCell = h('td', { style:'padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;' });
+      if (pk) {
+        actionCell.appendChild(h('button', { class:'btn tiny', onclick: () => editDbRow(tableName, pk, columns, row, render) }, '✏️'));
+        actionCell.appendChild(h('button', { class:'btn tiny danger', style:'margin-left:4px;', onclick: async () => {
+          if (!confirm('Zeile wirklich löschen?')) return;
+          await api(`/api/dbadmin/tables/${encodeURIComponent(tableName)}/rows/${encodeURIComponent(row[pk])}?pk=${encodeURIComponent(pk)}`, { method:'DELETE' });
+          toast('Zeile gelöscht.');
+          await render();
+        }}, '🗑️'));
+      }
+      tr.appendChild(actionCell);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    main.appendChild(table);
+
+    // Pagination
+    const pag = h('div', { style:'display:flex;gap:8px;margin:12px 0;align-items:center;' });
+    if (offset > 0) {
+      pag.appendChild(h('button', { class:'btn', onclick: async () => { offset = Math.max(0, offset - limit); await render(); } }, '← Zurück'));
+    }
+    pag.appendChild(h('span', {}, `${offset + 1}–${Math.min(offset + limit, total)} von ${total}`));
+    if (offset + limit < total) {
+      pag.appendChild(h('button', { class:'btn', onclick: async () => { offset += limit; await render(); } }, 'Weiter →'));
+    }
+    main.appendChild(pag);
+
+    // Add row button
+    if (pk) {
+      main.appendChild(h('button', { class:'btn primary', onclick: () => editDbRow(tableName, pk, columns, null, render) }, '+ Neue Zeile'));
+    }
+  }
+
+  await render();
+}
+
+function editDbRow(tableName, pk, columns, existingRow, onDone) {
+  const isNew = !existingRow;
+  const modal = h('div', { style:'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;' });
+  const box = h('div', { style:'background:#fff;border-radius:8px;padding:24px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;' });
+  box.appendChild(h('h2', { style:'margin:0 0 16px;' }, isNew ? 'Neue Zeile' : 'Zeile bearbeiten'));
+
+  const inputs = {};
+  columns.forEach(c => {
+    // Skip auto-increment PK for new rows
+    if (isNew && c.Key === 'PRI' && /auto_increment/i.test(c.Extra)) return;
+    const label = h('label', { style:'display:block;margin-bottom:12px;' }, c.Field + ' (' + c.Type + ')');
+    const val = existingRow ? (existingRow[c.Field] === null ? '' : String(existingRow[c.Field])) : (c.Default || '');
+    let inp;
+    if (/text|json|blob/i.test(c.Type)) {
+      inp = h('textarea', { style:'width:100%;min-height:80px;font-family:monospace;font-size:13px;' });
+      inp.value = val;
+    } else {
+      inp = h('input', { type:'text', value: val, style:'width:100%;' });
+    }
+    inputs[c.Field] = inp;
+    label.appendChild(inp);
+    box.appendChild(label);
+  });
+
+  const btnRow = h('div', { style:'display:flex;gap:8px;margin-top:16px;' });
+  btnRow.appendChild(h('button', { class:'btn primary', onclick: async () => {
+    const data = {};
+    for (const [key, inp] of Object.entries(inputs)) data[key] = inp.value;
+    try {
+      if (isNew) {
+        await api(`/api/dbadmin/tables/${encodeURIComponent(tableName)}/rows`, { method:'POST', body: JSON.stringify({ data }) });
+        toast('Zeile erstellt.');
+      } else {
+        await api(`/api/dbadmin/tables/${encodeURIComponent(tableName)}/rows/${encodeURIComponent(existingRow[pk])}`, {
+          method:'PUT', body: JSON.stringify({ data, pk })
+        });
+        toast('Zeile gespeichert.');
+      }
+      modal.remove();
+      if (onDone) await onDone();
+    } catch(err) { toast('Fehler: ' + err.message, true); }
+  }}, isNew ? 'Erstellen' : 'Speichern'));
+  btnRow.appendChild(h('button', { class:'btn', onclick: () => modal.remove() }, 'Abbrechen'));
+  box.appendChild(btnRow);
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Form Templates (dbadmin+)
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function viewForms(rest) {
+  main.innerHTML = '';
+  if (rest && rest[0] === 'new') return viewFormEditor(null);
+  if (rest && rest[0])          return viewFormEditor(rest[0]);
+
+  main.appendChild(h('div', { class:'toolbar' },
+    h('h1', {}, 'Formulare'),
+    h('a', { href:'#forms/new', class:'btn primary' }, '+ Neues Formular')
+  ));
+
+  const { forms } = await api('/api/dbadmin/forms');
+  if (!forms.length) {
+    main.appendChild(h('p', { style:'color:var(--muted);' }, 'Noch keine Formulare erstellt.'));
+    return;
+  }
+  const list = h('div', { class:'page-list' });
+  forms.forEach(f => {
+    const row = h('a', { href:'#forms/' + f.slug, class:'page-row' },
+      h('strong', {}, f.title),
+      h('span', { style:'color:var(--muted);margin-left:8px;font-size:13px;' },
+        'Tabelle: ' + f.table_name + ' · Zugriff: ' + f.access_level)
+    );
+    list.appendChild(row);
+  });
+  main.appendChild(list);
+}
+
+async function viewFormEditor(slug) {
+  main.innerHTML = '';
+  const isNew = !slug;
+  let form = { slug:'', title:'', description:'', table_name:'', fields:[], access_level:'dbadmin' };
+
+  if (!isNew) {
+    const res = await api('/api/dbadmin/forms/' + slug);
+    form = res.form;
+    form.fields = form.fields || [];
+  }
+
+  main.appendChild(h('div', { class:'toolbar' },
+    h('h1', {}, isNew ? 'Neues Formular' : 'Formular: ' + form.title),
+    h('a', { href:'#forms', class:'btn' }, '← Zurück')
+  ));
+
+  // Load available tables for the dropdown
+  const { tables } = await api('/api/dbadmin/tables');
+
+  const metaBox = h('div', { class:'editor-meta' });
+  if (isNew) {
+    metaBox.appendChild(h('label', {}, 'Slug (URL-Name)',
+      h('input', { type:'text', id:'f-slug', value: form.slug, placeholder:'z.B. bootsliegeplaetze' })));
+  }
+  metaBox.appendChild(h('label', {}, 'Titel',
+    h('input', { type:'text', id:'f-title', value: form.title })));
+  metaBox.appendChild(h('label', {}, 'Beschreibung',
+    h('input', { type:'text', id:'f-desc', value: form.description || '' })));
+
+  // Table picker
+  const tableSelect = h('select', { id:'f-table' });
+  tables.forEach(t => {
+    const opt = h('option', { value: t }, t);
+    if (t === form.table_name) opt.selected = true;
+    tableSelect.appendChild(opt);
+  });
+  metaBox.appendChild(h('label', {}, 'Datenbank-Tabelle', tableSelect));
+
+  // Access level picker
+  const accessSelect = h('select', { id:'f-access' });
+  [{ v:'public', l:'Frei (alle)' }, { v:'member', l:'Mitglieder' }, { v:'webadmin', l:'Webadmin' }, { v:'dbadmin', l:'DB-Admin' }].forEach(o => {
+    const opt = h('option', { value: o.v }, o.l);
+    if (o.v === form.access_level) opt.selected = true;
+    accessSelect.appendChild(opt);
+  });
+  metaBox.appendChild(h('label', {}, 'Zugriffslevel', accessSelect));
+  main.appendChild(metaBox);
+
+  // Load schema button + field list
+  const schemaBtn = h('button', { class:'btn', onclick: loadTableSchema }, '📋 Felder aus Tabelle laden');
+  main.appendChild(schemaBtn);
+
+  const fieldsContainer = h('div', { id:'f-fields', style:'margin:16px 0;' });
+  main.appendChild(fieldsContainer);
+
+  // Render existing fields
+  form.fields.forEach(f => addFieldRow(fieldsContainer, f));
+
+  // Add field manually
+  main.appendChild(h('button', { class:'btn', onclick: () => addFieldRow(fieldsContainer, { key:'', label:'', type:'text', required:false }) }, '+ Feld hinzufügen'));
+
+  // Save + Delete buttons
+  const btnRow = h('div', { class:'sticky-save' });
+  btnRow.appendChild(h('button', { class:'btn primary', onclick: saveForm }, '💾 Speichern'));
+  if (!isNew) {
+    btnRow.appendChild(h('button', { class:'btn danger', style:'margin-left:8px;', onclick: async () => {
+      if (!confirm('Formular "' + form.title + '" wirklich löschen?')) return;
+      await api('/api/dbadmin/forms/' + slug, { method:'DELETE' });
+      toast('Formular gelöscht.');
+      location.hash = '#forms';
+    }}, '🗑️ Löschen'));
+  }
+  main.appendChild(btnRow);
+
+  async function loadTableSchema() {
+    const table = document.getElementById('f-table').value;
+    if (!table) return;
+    try {
+      const { columns } = await api('/api/dbadmin/tables/' + encodeURIComponent(table) + '/schema');
+      fieldsContainer.innerHTML = '';
+      columns.forEach(c => {
+        // Skip auto-increment PKs
+        if (c.Key === 'PRI' && /auto_increment/i.test(c.Extra)) return;
+        addFieldRow(fieldsContainer, {
+          key: c.Field,
+          label: c.Field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          type: guessFieldType(c.Type),
+          required: c.Null === 'NO' && !c.Default && c.Key !== 'PRI',
+        });
+      });
+      toast('Felder geladen. Bitte Labels und Typen prüfen.');
+    } catch(err) { toast('Fehler: ' + err.message, true); }
+  }
+
+  function guessFieldType(sqlType) {
+    if (/int|decimal|float|double/i.test(sqlType)) return 'number';
+    if (/date/i.test(sqlType) && !/datetime/i.test(sqlType)) return 'date';
+    if (/datetime|timestamp/i.test(sqlType)) return 'datetime';
+    if (/text|longtext|mediumtext/i.test(sqlType)) return 'textarea';
+    if (/json/i.test(sqlType)) return 'json';
+    if (/enum/i.test(sqlType)) return 'select';
+    return 'text';
+  }
+
+  async function saveForm() {
+    const fields = collectFields();
+    const body = {
+      title:       document.getElementById('f-title').value.trim(),
+      description: document.getElementById('f-desc').value.trim(),
+      table_name:  document.getElementById('f-table').value,
+      fields:      fields,
+      access_level: document.getElementById('f-access').value,
+    };
+    if (isNew) body.slug = document.getElementById('f-slug').value.trim();
+    if (!body.title || !body.table_name || !fields.length) {
+      return toast('Titel, Tabelle und mindestens ein Feld sind Pflicht.', true);
+    }
+    try {
+      if (isNew) {
+        if (!body.slug) return toast('Slug ist Pflicht.', true);
+        await api('/api/dbadmin/forms', { method:'POST', body: JSON.stringify(body) });
+        toast('Formular erstellt.');
+        location.hash = '#forms/' + body.slug;
+      } else {
+        await api('/api/dbadmin/forms/' + slug, { method:'PUT', body: JSON.stringify(body) });
+        toast('Formular gespeichert.');
+      }
+    } catch(err) { toast('Fehler: ' + err.message, true); }
+  }
+
+  function collectFields() {
+    return Array.from(fieldsContainer.querySelectorAll('.form-field-row')).map(row => {
+      const inputs = row.querySelectorAll('input, select');
+      return {
+        key:      inputs[0].value.trim(),
+        label:    inputs[1].value.trim(),
+        type:     inputs[2].value,
+        required: inputs[3].checked,
+      };
+    }).filter(f => f.key);
+  }
+}
+
+const FORM_FIELD_TYPES = [
+  { v:'text', l:'Text' }, { v:'number', l:'Zahl' }, { v:'date', l:'Datum' },
+  { v:'datetime', l:'Datum+Zeit' }, { v:'textarea', l:'Mehrzeilig' },
+  { v:'select', l:'Auswahl' }, { v:'checkbox', l:'Checkbox' }, { v:'json', l:'JSON' },
+];
+
+function addFieldRow(container, field) {
+  const row = h('div', { class:'form-field-row', style:'display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;' });
+  row.appendChild(h('input', { type:'text', value: field.key || '', placeholder:'Spaltenname', style:'width:140px;' }));
+  row.appendChild(h('input', { type:'text', value: field.label || '', placeholder:'Label', style:'flex:1;min-width:120px;' }));
+  const typeSelect = h('select', { style:'width:100px;' });
+  FORM_FIELD_TYPES.forEach(t => {
+    const opt = h('option', { value: t.v }, t.l);
+    if (t.v === field.type) opt.selected = true;
+    typeSelect.appendChild(opt);
+  });
+  row.appendChild(typeSelect);
+  const reqCb = h('input', { type:'checkbox' });
+  if (field.required) reqCb.checked = true;
+  row.appendChild(h('label', { style:'display:flex;align-items:center;gap:4px;font-size:13px;white-space:nowrap;' }, reqCb, 'Pflicht'));
+  row.appendChild(h('button', { class:'btn tiny danger', onclick: () => row.remove() }, '✕'));
+  container.appendChild(row);
 }
 
 })();

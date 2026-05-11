@@ -10,10 +10,12 @@ const pinoHttp     = require('pino-http');
 const fs                = require('fs');
 const logger            = require('./lib/logger');
 const { connect }       = require('./db/connection');
-const { requireAuth, requireAdmin, optionalAuth } = require('./middleware/auth');
+const { requireAuth, requireAdmin, requireRole, optionalAuth } = require('./middleware/auth');
 const authRouter        = require('./routes/auth');
 const membersRouter     = require('./routes/members');
 const adminRouter       = require('./routes/admin');
+const dbadminRouter     = require('./routes/dbadmin');
+const formsRouter       = require('./routes/forms');
 const { router: pagesRouter, renderPageBySlug } = require('./routes/pages');
 
 const app  = express();
@@ -73,6 +75,8 @@ app.use('/api/forgot-password', authLimiter);
 app.use('/api', authRouter);
 app.use('/api/members', requireAuth, membersRouter);
 app.use('/api/admin',   requireAdmin, adminRouter);
+app.use('/api/dbadmin', requireRole('dbadmin'), dbadminRouter);
+app.use('/api/forms',   optionalAuth, formsRouter);
 
 // Admin draft preview — must be defined BEFORE the static /admin handler,
 // so that /admin/preview/:slug is handled by our renderer, not as a file.

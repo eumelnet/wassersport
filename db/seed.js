@@ -227,6 +227,22 @@ async function migrate(conn) {
     )
   `);
 
+  // Form templates for the DB-Admin form builder
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS form_templates (
+      id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      slug        VARCHAR(64) NOT NULL UNIQUE,
+      title       VARCHAR(200) NOT NULL,
+      description TEXT,
+      table_name  VARCHAR(64) NOT NULL,
+      fields_json JSON NOT NULL COMMENT 'Array of {key, label, type, required, options?, ...}',
+      access_level VARCHAR(16) NOT NULL DEFAULT 'dbadmin' COMMENT 'public|member|webadmin|dbadmin',
+      created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      created_by  INT UNSIGNED NULL
+    )
+  `);
+
   // pages: add any columns missing from pre-existing installs
   if (await tableExists(conn, 'pages')) {
     await addColumnIfMissing(conn, 'pages', 'draft_blocks_json', `draft_blocks_json JSON NULL`);
