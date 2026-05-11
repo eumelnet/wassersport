@@ -1323,9 +1323,9 @@ async function viewDb(rest) {
 
   // List tables
   const { tables } = await api('/api/dbadmin/tables');
-  const list = h('div', { class:'page-list' });
+  const list = h('div', { style:'display:flex;flex-direction:column;gap:4px;' });
   tables.forEach(t => {
-    list.appendChild(h('a', { href:'#db/' + t, class:'page-row' },
+    list.appendChild(h('a', { href:'#db/' + t, style:'display:block;padding:10px 14px;border:1px solid var(--line);border-radius:6px;text-decoration:none;color:var(--text);' },
       h('strong', {}, t)
     ));
   });
@@ -1480,9 +1480,9 @@ async function viewForms(rest) {
     main.appendChild(h('p', { style:'color:var(--muted);' }, 'Noch keine Formulare erstellt.'));
     return;
   }
-  const list = h('div', { class:'page-list' });
+  const list = h('div', { style:'display:flex;flex-direction:column;gap:4px;' });
   forms.forEach(f => {
-    const row = h('a', { href:'#forms/' + f.slug, class:'page-row' },
+    const row = h('a', { href:'#forms/' + f.slug, style:'display:block;padding:10px 14px;border:1px solid var(--line);border-radius:6px;text-decoration:none;color:var(--text);' },
       h('strong', {}, f.title),
       h('span', { style:'color:var(--muted);margin-left:8px;font-size:13px;' },
         'Tabelle: ' + f.table_name + ' · Zugriff: ' + f.access_level)
