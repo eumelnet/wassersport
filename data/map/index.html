@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Havelkanal – Streifenkarte 1:5.000 (Web)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="leaflet.css">
+<style>
+  html,body{margin:0;height:100%;font-family:Segoe UI,Roboto,Arial,sans-serif;overflow:hidden}
+  #map{position:absolute;inset:0}
+  .leaflet-container{background:#f7f5ee}
+  #header{position:absolute;top:0;left:0;right:0;height:24px;z-index:910;background:rgba(255,253,246,.94);
+          border-bottom:1px solid #d8c48a;font-size:11px;color:#555;line-height:24px;padding:0 10px;
+          box-shadow:0 1px 4px rgba(0,0,0,.12)}
+  #panel{position:absolute;top:34px;left:10px;z-index:1000;background:#fffdf6;border:1px solid #d8c48a;
+         border-radius:8px;padding:10px 12px;width:236px;box-shadow:0 2px 10px rgba(0,0,0,.18);font-size:13px;
+         max-height:calc(100vh - 60px);display:flex;flex-direction:column}
+  #panel h1{font-size:15px;margin:0 0 2px;color:#6b3f1f}
+  #panel .sub{color:#777;font-size:11px;margin-bottom:8px}
+  #panel input{width:52px;padding:2px 4px;border:1px solid #b9a96b;border-radius:4px}
+  #panel button{padding:2px 9px;border-radius:4px;border:1px solid #8a6a3c;background:#f7e9c8;cursor:pointer}
+  #pois{margin-top:8px;overflow:auto;padding-right:4px}
+  #pois .grp{font-weight:bold;color:#6b3f1f;font-size:11px;margin:6px 0 2px}
+  #pois div.poi{cursor:pointer;padding:2px 4px;border-radius:4px;font-size:12px}
+  #pois div.poi:hover{background:#f2ead0;color:#6b3f1f}
+  #pois .km{color:#999;font-size:11px;margin-left:4px}
+  #status{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:1000;
+          background:rgba(255,253,246,.92);border:1px solid #d8c48a;border-radius:6px;
+          padding:2px 12px;font-size:12px;color:#333}
+  .km-marker{color:#3a3a3a;font-size:11px;font-weight:bold;text-shadow:0 0 3px #fff}
+</style>
+</head>
+<body>
+<div id="header">Havelkanal (HvK) – Streifenkarte 1:5.000 · ENC-Daten · km 0,0 – 34,59 · Brieselang bis Paretz</div>
+<div id="map"></div>
+
+<div id="panel">
+  <h1>Navigieren</h1>
+  <div class="sub">Ziehen zum Verschieben · Mausrad zum Zoomen</div>
+  <div style="margin:4px 0">
+    Zu km: <input id="km" type="number" min="0" max="34.6" step="0.5" value="8"
+      onkeydown="if(event.key==='Enter')goKm()"><button onclick="goKm()">⏎</button>
+  </div>
+  <div id="pois"></div>
+</div>
+
+<div id="status">km –</div>
+
+<script src="leaflet.js"></script>
+<script>
+const CFG = {"res0": 0.03, "tile": 256, "s_start": -1983.3042644796992, "s_end": 32511.011908029304, "shift": 1983.3042644796992, "half": 460.0, "maxzoom": 6, "km_a": 1.0027739012715162, "km_b": 1.988805754700743};
+const POIS = [{"type": "Gewässer", "color": "#1f6fb2", "name": "Lasszinssee", "lat": 1979.4486604156891, "lng": 391.0, "km": 3.97374521027246}, {"type": "Ortschaft", "color": "#8a4d2b", "name": "Schoenwalde-Dorf", "lat": 3820.314356321881, "lng": -391.0, "km": 5.819717285873217}, {"type": "Ortschaft", "color": "#8a4d2b", "name": "Siedlung Schoenwalde", "lat": 4412.037227626852, "lng": 391.0, "km": 6.4130815380032855}, {"type": "Brücke", "color": "#7b3f00", "name": "Strassenbruecke Schoenwalde", "lat": 4480.605740947646, "lng": -1.7904854947977715, "km": 6.4818402536103665}, {"type": "Liegestelle", "color": "#3a7d44", "name": "Wartestelle Beruf", "lat": 6537.8144916676665, "lng": -18.88497907722613, "km": 8.544755498299784}, {"type": "Liegestelle", "color": "#3a7d44", "name": "Wartestelle Sport", "lat": 6614.274132456362, "lng": 14.428174985620293, "km": 8.621427230583283}, {"type": "Grenze", "color": "#555", "name": "Schleuse Schoenwalde", "lat": 6770.707812257501, "lng": 7.553524296994766, "km": 8.77829484196773}, {"type": "Grenze", "color": "#555", "name": "Schleuse Schoenwalde", "lat": 6770.723742348137, "lng": -12.495514150383446, "km": 8.778310816246865}, {"type": "Grenze", "color": "#555", "name": "Schleuse Schoenwalde", "lat": 6810.83788452882, "lng": 33.429890459702875, "km": 8.818536231097548}, {"type": "Schleuse", "color": "#004488", "name": "Schleuse Schoenwalde", "lat": 6815.844736238598, "lng": -3.1066500215469506, "km": 8.82355697131965}, {"type": "Grenze", "color": "#555", "name": "Schleuse Schoenwalde", "lat": 6863.157774368429, "lng": 7.101947953656368, "km": 8.871001251146108}, {"type": "Grenze", "color": "#555", "name": "Schleuse Schoenwalde", "lat": 6864.054538438859, "lng": -13.198223306248252, "km": 8.871900502751535}, {"type": "Brücke", "color": "#7b3f00", "name": "Schleusenbruecke Schoenwalde", "lat": 6871.824754703138, "lng": -1.678553377031428, "km": 8.879692272828589}, {"type": "Liegestelle", "color": "#3a7d44", "name": "Wartestelle Sport", "lat": 7012.657956248659, "lng": 12.653731003687044, "km": 9.02091613177095}, {"type": "Liegestelle", "color": "#3a7d44", "name": "Wartestelle Beruf", "lat": 7087.20193948756, "lng": -18.485890504208175, "km": 9.09566689265974}, {"type": "Brücke", "color": "#7b3f00", "name": "Eisenbahnbruecke Schoenwalde I - oberhalb", "lat": 7707.148852258438, "lng": -3.3086306233440634, "km": 9.717333476960226}, {"type": "Brücke", "color": "#7b3f00", "name": "Eisenbahnbruecke Schoenwalde II - unterhalb", "lat": 7717.033672855378, "lng": -4.838782756112867, "km": 9.727245717073588}, {"type": "Brücke", "color": "#7b3f00", "name": "Strassenbruecke Forsthaus Alt- Brieselang", "lat": 12333.24267052658, "lng": -1.660847819618166, "km": 14.356259622753015}, {"type": "Gewässer", "color": "#1f6fb2", "name": "Gewässer", "lat": 13923.801272488088, "lng": -173.88246427862038, "km": 15.951230277242924}, {"type": "Gewässer", "color": "#1f6fb2", "name": "Gewässer", "lat": 13958.728366799882, "lng": -391.0, "km": 15.98625425586604}, {"type": "Brücke", "color": "#7b3f00", "name": "Fuss- und Radwegbruecke Brieselang", "lat": 15298.607991988552, "lng": 6.19237665522836, "km": 17.3298505748507}, {"type": "Ortschaft", "color": "#8a4d2b", "name": "Brieselang", "lat": 15502.862810960056, "lng": 391.0, "km": 17.534671976524262}, {"type": "Grenze", "color": "#555", "name": "Bootshaus", "lat": 15975.13822770292, "lng": -61.34363020362993, "km": 18.008257438646137}, {"type": "Hafen", "color": "#0a7f5a", "name": "Sportboothafen", "lat": 15976.070688893642, "lng": 41.960091058232976, "km": 18.00919248639214}, {"type": "Hafen", "color": "#0a7f5a", "name": "Sportboothafen", "lat": 16028.51387220716, "lng": -56.51936194229311, "km": 18.061781141918534}, {"type": "Hafen", "color": "#0a7f5a", "name": "Sportboothafen", "lat": 16049.206654234056, "lng": 37.63284906864939, "km": 18.082531323679802}, {"type": "Brücke", "color": "#7b3f00", "name": "Eisenbahnbruecke Brieselang II - oberhalb", "lat": 16224.31115352329, "lng": -4.3209269978246185, "km": 18.258121545562265}, {"type": "Brücke", "color": "#7b3f00", "name": "Eisenbahnbruecke Brieselang I - unterhalb", "lat": 16235.534943964192, "lng": -7.190845107581072, "km": 18.269376469689742}, {"type": "Brücke", "color": "#7b3f00", "name": "Strassenbruecke Brieselang", "lat": 16449.537509099067, "lng": 7.776831484382174, "km": 18.483972656812153}, {"type": "Brücke", "color": "#7b3f00", "name": "Strassenbruecke Brieselang", "lat": 16450.87348109266, "lng": -7.510833370343381, "km": 18.485312334660158}, {"type": "Brücke", "color": "#7b3f00", "name": "Autobahnbruecke Brieselang - oberhalb", "lat": 16717.89539397362, "lng": 2.859046868904778, "km": 18.75307493996478}, {"type": "Brücke", "color": "#7b3f00", "name": "Autobahnbruecke Brieselang II - unterhalb", "lat": 16753.838822889556, "lng": -0.6860778102618411, "km": 18.789118072403888}, {"type": "Gewässer", "color": "#1f6fb2", "name": "Gewässer", "lat": 17167.052486919387, "lng": 377.0910836401508, "km": 19.20347795034178}, {"type": "Gewässer", "color": "#1f6fb2", "name": "Gewässer", "lat": 17397.33772727858, "lng": 274.0361143026182, "km": 19.434401979222017}, {"type": "Gewässer", "color": "#1f6fb2", "name": "Gewässer", "lat": 17508.771288937736, "lng": 349.0639370483901, "km": 19.54614464657955}, {"type": "Brücke", "color": "#7b3f00", "name": "Strassenbruecke Zeestow (Ostdurchfahrt)", "lat": 18142.075944317654, "lng": 6.960107826560994, "km": 20.18120602654828}, {"type": "Brücke", "color": "#7b3f00", "name": "Strassenbruecke Zeestow (Westdurchfahrt)", "lat": 18147.152666455295, "lng": -8.30644107284608, "km": 20.186296831011916}, {"type": "Ortschaft", "color": "#8a4d2b", "name": "Zeestow", "lat": 18387.42505592408, "lng": -391.0, "km": 20.42723571236736}, {"type": "Grenze", "color": "#555", "name": "Schoepfwerk Zeestow", "lat": 18688.592490325762, "lng": 63.3439932917616, "km": 20.729238555498267}, {"type": "Wendebucht", "color": "#006699", "name": "Wendestelle Zeestow", "lat": 18783.631525181117, "lng": -7.179369339206355, "km": 20.824541219253252}, {"type": "Gewässer", "color": "#1f6fb2", "name": "Gewässer", "lat": 18932.855933927247, "lng": 391.0, "km": 20.97417956177654}, {"type": "Liegestelle", "color": "#3a7d44", "name": "Reede Zeestow", "lat": 19124.918736481177, "lng": -28.495956273712004, "km": 21.16677512758269}, {"type": "Gewässer", "color": "#1f6fb2", "name": "Gewässer", "lat": 19296.431790613213, "lng": 391.0, "km": 21.338763941993662}, {"type": "Brücke", "color": "#7b3f00", "name": "Wegebruecke Kuhdammbruecke", "lat": 19337.996280426793, "lng": 1.2753064230497881, "km": 21.380443727598387}, {"type": "Liegestelle", "color": "#3a7d44", "name": "Liegestelle", "lat": 19770.09167707031, "lng": 36.09000263998477, "km": 21.81373771421207}, {"type": "Liegestelle", "color": "#3a7d44", "name": "Liegestelle", "lat": 19965.685027650994, "lng": 33.57484708961067, "km": 22.00987362143663}, {"type": "Brücke", "color": "#7b3f00", "name": "Strassenbruecke OU Wustermark", "lat": 20071.646236831257, "lng": 3.685731302012741, "km": 22.116128756549767}, {"type": "Brücke", "color": "#7b3f00", "name": "Eisenbahnbruecke Wustermark I", "lat": 20765.24177729199, "lng": 4.729682631396567, "km": 22.811648262562105}, {"type": "Brücke", "color": "#7b3f00", "name": "Eisenbahnbruecke Wustermark II", "lat": 20782.162804585154, "lng": 1.8857037619611081, "km": 22.828616227114395}, {"type": "Grenze", "color": "#555", "name": "WSV Stuetzpunkt Wustermark", "lat": 21412.682609322135, "lng": 106.16419396035268, "km": 23.46088503153945}, {"type": "Grenze", "color": "#555", "name": "WSV Stuetzpunkt Wustermark", "lat": 21427.60147460874, "lng": 127.86478637488113, "km": 23.47584528028544}, {"type": "Grenze", "color": "#555", "name": "WSV Stuetzpunkt Wustermark", "lat": 21432.024688532594, "lng": 116.86663083226796, "km": 23.48028076376802}, {"type": "Ortschaft", "color": "#8a4d2b", "name": "Dyrotz", "lat": 21440.129309758453, "lng": 391.0, "km": 23.488407866413006}, {"type": "Ortschaft", "color": "#8a4d2b", "name": "Wustermark", "lat": 21487.767452423468, "lng": -391.0, "km": 23.536178152582533}, {"type": "Liegestelle", "color": "#3a7d44", "name": "Umschlagstelle", "lat": 21525.39647337533, "lng": -38.12334686494687, "km": 23.57391155272346}, {"type": "Liegestelle", "color": "#3a7d44", "name": "Liegestelle WSV Stuetzpunkt Wustermark", "lat": 21537.97529612084, "lng": 34.59854517872192, "km": 23.586525267881377}, {"type": "Brücke", "color": "#7b3f00", "name": "Strassenbruecke Wustermark", "lat": 21624.788023699064, "lng": -1.9564894045231616, "km": 23.673578805395014}, {"type": "Gewässer", "color": "#1f6fb2", "name": "Gewässer", "lat": 22531.39510550644, "lng": -391.0, "km": 24.582700725739382}, {"type": "Ortschaft", "color": "#8a4d2b", "name": "Hoppenrade", "lat": 23214.33408641177, "lng": -391.0, "km": 25.267534111952212}, {"type": "Ortschaft", "color": "#8a4d2b", "name": "Buchow-Karpzow", "lat": 24913.445129165695, "lng": 251.96859654974736, "km": 26.971358320988077}, {"type": "Ortschaft", "color": "#8a4d2b", "name": "Buchow-Karpzow", "lat": 24951.27255657136, "lng": -312.3384033822481, "km": 27.00929067794272}, {"type": "Brücke", "color": "#7b3f00", "name": "Strassenbruecke Buchow- Karpzow", "lat": 25028.555285402483, "lng": 2.7697369974713792, "km": 27.086787781433618}, {"type": "Hafen", "color": "#0a7f5a", "name": "HWSF-Marina", "lat": 25078.136420653827, "lng": -62.2309435853268, "km": 27.136506449859077}, {"type": "Ortschaft", "color": "#8a4d2b", "name": "Falkenrehde", "lat": 27411.319087710785, "lng": -391.0, "km": 29.47616113528286}, {"type": "Ortschaft", "color": "#8a4d2b", "name": "Paaren", "lat": 27934.935013223054, "lng": 391.0, "km": 30.0012295196767}, {"type": "Brücke", "color": "#7b3f00", "name": "Strassenbruecke Falkenrehde", "lat": 28118.838509168636, "lng": 3.6526731693416896, "km": 30.18564314576352}, {"type": "Gewässer", "color": "#1f6fb2", "name": "Gewässer", "lat": 28226.760275062323, "lng": 391.0, "km": 30.293864275980845}, {"type": "Gewässer", "color": "#1f6fb2", "name": "Gewässer", "lat": 28261.07381391372, "lng": 391.0, "km": 30.328272997201292}];
+const RES0 = CFG.res0, TILE = CFG.tile, S_START = CFG.s_start, S_END = CFG.s_end;
+const SHIFT = CFG.shift, HALF = CFG.half, MAXZ = CFG.maxzoom;
+const KM_A = CFG.km_a, KM_B = CFG.km_b;
+const km2s = km => (km - KM_B)/KM_A*1000;
+const s2km = s  => KM_B + KM_A*(s/1000);
+
+// custom CRS: lat = s (m along axis), lng = t (m across)
+const crs = L.Util.extend({}, L.CRS.Simple, {
+    projection: L.Projection.LonLat,
+    transformation: new L.Transformation(RES0, RES0*HALF, RES0, RES0*SHIFT),
+    scale: z => Math.pow(2, z),
+    zoom: sc => Math.log(sc)/Math.LN2
+});
+
+const map = L.map('map', {crs, minZoom:0, maxZoom:MAXZ, attributionControl:false,
+    zoomControl:false, worldCopyJump:false,
+    maxBounds:[[S_START,-HALF-20],[S_END, HALF+20]]});
+L.control.zoom({position:'bottomright'}).addTo(map);
+
+// white fallback for out-of-range tiles
+function whiteURI(){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#f7f5ee"/></svg>');}
+const Layer = L.GridLayer.extend({
+    createTile: function(coords, done){
+        const img = document.createElement('img');
+        img.onload = () => done(null, img);
+        img.onerror = () => done('tile error');
+        const cfg = CFG.rows[String(coords.z)];
+        if (cfg && coords.x >= 0 && coords.x < cfg.cols &&
+            coords.y >= 0 && coords.y < cfg.rows){
+            img.src = (CFG.tileBase||'tiles') + `/${coords.z}/${coords.x}/${coords.y}.png`;
+        } else {
+            img.src = whiteURI();
+        }
+        return img;
+    }
+});
+new Layer({tileSize:TILE, minZoom:0, maxZoom:MAXZ}).addTo(map);
+
+// ---------- km rail markers along the canal ----------
+const kmIcons = L.layerGroup().addTo(map);
+function placeKmMarkers(){
+    kmIcons.clearLayers();
+    for (let km=0; km<=34; km++){
+        const s = km2s(km);
+        L.marker([s, -(HALF-70)], {interactive:false,
+            icon:L.divIcon({html:`<div class="km-marker">km ${km}</div>`,className:'',iconSize:[42,12]})})
+            .bindTooltip(`km ${km},00`).addTo(kmIcons);
+    }
+}
+placeKmMarkers();
+
+// ---------- POI list + markers ----------
+const TYPES = {Brücke:'#7b3f00', Schleuse:'#003b7a', Wendebucht:'#0059b3', Hafen:'#0e7c4a',
+    Liegestelle:'#4e9a51', Ortschaft:'#9c5a2a', Gewässer:'#2a7fc7', Grenze:'#5a5a5a'};
+const icons={};
+for (const[k,c] of Object.entries(TYPES)){
+    icons[k]=L.divIcon({html:`<div style="width:13px;height:13px;border-radius:2px;
+        background:${c};border:1.5px solid #fff;box-shadow:0 0 3px rgba(0,0,0,.5)"></div>`,
+        className:'',iconSize:[13,13],iconAnchor:[7,7]});
+}
+const group=L.layerGroup().addTo(map);
+const poisEl=document.getElementById('pois');
+let grp='';
+for (const p of POIS){
+    if (p.type!==grp){grp=p.type; const g=document.createElement('div');
+        g.className='grp'; g.textContent=grp; poisEl.appendChild(g);}
+    const row=document.createElement('div');
+    row.className='poi';
+    row.innerHTML=`<span style="color:${p.color}">■</span> ${p.name}<span class="km">km ${p.km.toFixed(2)}</span>`;
+    row.onclick=()=>{ map.flyTo([p.lat, p.lng], MAXZ, {animate:true}); };
+    poisEl.appendChild(row);
+    const mk=L.marker([p.lat,p.lng],{icon:icons[p.type]});
+    mk.bindPopup(`<b>${p.name}</b><br>${p.type} · km ${p.km.toFixed(2)} · t = ${p.lng.toFixed(0)} m`);
+    mk.addTo(group);
+}
+
+function goKm(){
+    const km=parseFloat(document.getElementById('km').value);
+    if (isNaN(km)) return;
+    map.flyTo([km2s(km), 0], MAXZ, {animate:true});
+}
+const statusEl=document.getElementById('status');
+map.on('mousemove', e => {
+    const km=KM_B+KM_A*(e.latlng.lat/1000);
+    const t=e.latlng.lng;
+    const side = t < -8 ? 'links' : (t > 8 ? 'rechts' : 'Mitte');
+    statusEl.innerHTML = `km ${km.toFixed(2)}  ·  ${side} ${t>=0?'+':''}${t.toFixed(0)} m`;
+});
+
+// initial view: center of strip
+map.setView([(S_START+S_END)/2, 0], 1);
+</script>
+</body>
+</html>
